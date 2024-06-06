@@ -1,0 +1,24 @@
+services:
+  front:
+    build:
+      context: .
+      dockerfile: ./dockerfiles/front/Dockerfile
+    tty: true
+    volumes:
+      - ./front/src:/app
+    environment:
+      - WATCHPACK_POLLING=true
+    command: sh -c "npm run dev"
+    ports:
+      - "3000:3000"
+    
+  back:
+    build:
+      context: .
+      dockerfile: ./dockerfiles/back/Dockerfile
+    tty: true
+    volumes:
+      - ./back:/app
+    command: sh -c "go run main.go"
+    ports:
+      - "8080:8080"

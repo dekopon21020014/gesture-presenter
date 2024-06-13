@@ -5,7 +5,7 @@ services:
       dockerfile: ./dockerfiles/front/Dockerfile
     tty: true
     volumes:
-      - ./front/src:/app
+      - ./front:/app
     environment:
       - WATCHPACK_POLLING=true
     command: sh -c "npm run dev"

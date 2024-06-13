@@ -24,4 +24,5 @@ Make sure you have the following software installed on your machine:
 ```bash
 git clone https://github.com/kut-ase2024-group4/gesture-presenter.git
 cd gesture presenter
+docker compose run -w /app --rm front npm install
 docker compose up

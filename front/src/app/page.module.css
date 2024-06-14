@@ -1,0 +1,23 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wrapper {
+    padding: 5rem 0 8rem;
+}
+
+.textWrapper {
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px 16px;
+    gap: 16px;
+}
+
+.option {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}

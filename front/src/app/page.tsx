@@ -1,12 +1,15 @@
+
 "use client";
 
-import BasicSlider from "./components/BasicSlider";
+import BasicSlider from "./components/BasicSlider/Swiper";
 import styles from "./page.module.css";
+import { Mediapipe } from "./components/Detection/Mediapipe";
 
 export default function Home() {
   return (
     <div className={styles.wrapper}>
-        <BasicSlider />
+      <Mediapipe />
+      <BasicSlider />
     </div>
   );
 }

@@ -5,8 +5,8 @@ import "./globals.css";
 const montserrat = Montserrat({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Next.js - Swiper Demo",
-  description: "Next.jsを使ったSwiperのデモ",
+  title: "Gesture Presenter",
+  description: "ジェスチャーを用いたスライド操作アプリケーション",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

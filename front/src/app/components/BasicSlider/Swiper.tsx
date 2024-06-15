@@ -6,7 +6,7 @@ import { Swiper as SwiperClass } from 'swiper/types';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
-import styles from './index.module.css';
+import styles from './swiper.module.css';
 
 const images = [
   '/basicSlider/test1.jpeg',
@@ -42,9 +42,9 @@ const BasicSlider: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
 
-    return () => {
+    return(() => {
       window.removeEventListener('keydown', handleKeyDown);
-    };
+    });
   }, []);
 
   return (

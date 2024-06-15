@@ -7,6 +7,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import styles from './swiper.module.css';
+import { Mediapipe } from '../Detection/Mediapipe';
 
 const images = [
   '/basicSlider/test1.jpeg',
@@ -47,32 +48,43 @@ const BasicSlider: React.FC = () => {
     });
   }, []);
 
+  const nextSlide = () => {
+    swiperInstanceRef.current!.slideNext();
+  }
+
+  const prevSlide = () => {
+    swiperInstanceRef.current!.slidePrev();
+  }
+
   return (
-    <Swiper
-      modules={[Navigation, Pagination]}
-      breakpoints={slideSettings}
-      slidesPerView="auto"
-      centeredSlides
-      loop
-      speed={1000}
-      pagination={{ clickable: true }}
-      className={styles.slideWrapper}
-      onSwiper={(swiper) => { swiperInstanceRef.current = swiper; }}
-    >
-      {images.map((src, index) => (
-        <SwiperSlide key={index}>
-          <Image
-            src={src}
-            width={1920}
-            height={1038}
-            alt={`Slider Image ${index + 1}`}
-            sizes="(min-width: 1024px) 100vw, 60vw"
-            loading="eager"
-            className={styles.slideImage}
-          />
-        </SwiperSlide>
-      ))}
-    </Swiper>
+    <div>
+      <Swiper
+        modules={[Navigation, Pagination]}
+        breakpoints={slideSettings}
+        slidesPerView="auto"
+        centeredSlides
+        loop
+        speed={1000}
+        pagination={{ clickable: true }}
+        className={styles.slideWrapper}
+        onSwiper={(swiper) => { swiperInstanceRef.current = swiper; }}
+      >
+        {images.map((src, index) => (
+          <SwiperSlide key={index}>
+            <Image
+              src={src}
+              width={1920}
+              height={1038}
+              alt={`Slider Image ${index + 1}`}
+              sizes="(min-width: 1024px) 100vw, 60vw"
+              loading="eager"
+              className={styles.slideImage}
+            />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+      <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
+    </div>
   );
 };
 

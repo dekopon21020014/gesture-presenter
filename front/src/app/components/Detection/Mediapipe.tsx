@@ -1,38 +1,21 @@
 import { GestureRecognizer, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef } from "react"
 import { setupGestureRecognizer, setupPoseLandmarker } from "./modelSettings";
+import { useStream } from "./useStream";
 
-export const Mediapipe = () => {
-  const inputVideo = useRef<HTMLVideoElement>(null);
-  const outputVideo = useRef<HTMLCanvasElement>(null);
-  const mediaStream = useRef<MediaStream | null>(null);
-  
-  const [canvasWidth, canvasHeight] = [380, 460];
+interface MediapipeProps {
+  nextSlide: () => void;
+  prevSlide: () => void;
+}
+
+export const Mediapipe = ({nextSlide, prevSlide}: MediapipeProps) => {
+  const [canvasWidth, canvasHeight] = [480, 360];
   const oneSecMs = 1000; // 1秒のミリ秒換算
 
-  // コンポーネントのマウント時にカメラのストリームを確保する
-  useEffect(() => {
-    let ignore = false;
-    const setupCamera = async () => {
-      if(!ignore) { // アンマウント時は実行しない．
-        // clientのカメラを確認．映像を取得する．
-        mediaStream.current = await navigator.mediaDevices.getUserMedia({
-          video: { width: canvasWidth, height: canvasHeight },
-          audio: false
-        });
-      }
-
-      if (inputVideo && mediaStream.current) {
-        inputVideo.current!.srcObject = mediaStream.current;
-      }
-    }
-    setupCamera();
-    
-    return (() => {
-      ignore = true;
-      mediaStream.current?.getTracks().forEach(track => track.stop())
-    })
-  }, []);
+  const inputVideo = useRef<HTMLVideoElement>(null);
+  const outputVideo = useRef<HTMLCanvasElement>(null);
+  useStream(inputVideo, canvasWidth, canvasHeight);
+  
 
   useEffect(() => {
     const video = inputVideo.current;
@@ -44,6 +27,8 @@ export const Mediapipe = () => {
       poseLandmarker = await setupPoseLandmarker(); // from ./modelSettings.ts 全身座標のモデル
       gestureRecognizer = await setupGestureRecognizer(); // from ./modelSettings.ts ジェスチャー認識のモデル
     
+      let countOpen = 0;
+      let countPointer = 0;
       const renderLoop = () => {
         if(video && video.currentTime !== lastVideoTime) {
           try {
@@ -51,14 +36,28 @@ export const Mediapipe = () => {
             const poseResult = poseLandmarker!.detectForVideo(video, time);
             const gestureResult = gestureRecognizer!.recognizeForVideo(video, time);
             const gestureLeft = gestureResult.gestures.at(0)?.at(0);
-            const gestureRight = gestureResult.gestures.at(1)?.at(0);
-            console.log(gestureLeft, gestureRight);
+
+            // リファクタリング必要。オブジェクト使って、ジェスチャーが増えてもコードがそこまで増えないようにしたい。
+            if(gestureLeft?.categoryName === "Open_Palm") {
+              countOpen++;
+            } else if (gestureLeft?.categoryName === "Pointing_Up") {
+              countPointer++;
+            }
+            if(countOpen > 4) {
+              console.log(gestureLeft);
+              nextSlide();
+              countOpen = 0;
+            } else if (countPointer) {
+              prevSlide();
+              countPointer = 0;
+            }
+
             lastVideoTime = video.currentTime;
           } catch(e) {
             console.log(e);
           }
-          requestAnimationFrame(renderLoop);
         }
+        requestAnimationFrame(renderLoop);
       }
 
       if(video) {

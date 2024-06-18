@@ -22,3 +22,27 @@ services:
     command: sh -c "go run main.go"
     ports:
       - "8080:8080"
+
+  db:
+    container_name: db
+    build:
+      context: .
+      dockerfile: ./dockerfiles/db/Dockerfile
+    #platform: linux/x86_64
+    tty: true
+    ports:
+      - 3306:3306
+    env_file:
+      - ./db/.env
+    volumes:
+      - type: volume
+        source: mysql-data
+        target: /var/lib/mysql
+      - type: bind
+        source: ./db/init
+        target: /docker-entrypoint-initdb.d
+
+volumes:
+  mysql-data:
+    name: gesture-presenter
+  

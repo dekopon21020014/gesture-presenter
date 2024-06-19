@@ -42,6 +42,12 @@ services:
         source: ./db/init
         target: /docker-entrypoint-initdb.d
 
+  redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+      - 6379:6379
+
 volumes:
   mysql-data:
     name: gesture-presenter

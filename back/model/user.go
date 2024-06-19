@@ -64,7 +64,7 @@ func Signup(email, name, password string) (*User, error) {
 	}
 	
 	result := Db.Create(&user)
-	if result.Error != nil {    
+	if result.Error != nil {
     	fmt.Println("エラー:", result.Error)
 	}
 	return &user, nil
@@ -86,5 +86,14 @@ func Login(email, password string) (*User, error) {
 		return nil, err
 	}
 
+	return &user, nil
+}
+
+func GetUserByID(id uint) (*User, error) {
+	var user User
+	result := Db.Where("id = ?", id).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	return &user, nil
 }

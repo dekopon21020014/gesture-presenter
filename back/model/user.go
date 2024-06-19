@@ -14,7 +14,6 @@ import (
 
 type User struct {
     gorm.Model
-    Id   string `gorm:"not null;unique"`
     Password string `gorm:"not null"`
     Name     string `gorm:"not null"`
     Email    string `gorm:"not null;unique"`
@@ -42,27 +41,28 @@ func (u *User) LoggedIn() bool {
 	return u.ID != 0
 }
 
-func Signup(email, name, password string) (*User, error) {
+// for user sign up
+func Signup(email, name, password string) (*User, error) {	
 	user := User{}
 	Db.Where("name = ?", name).First(&user)
 	if user.ID != 0 {
 		err := errors.New("同一名のUserIdが既に登録されています。")
 		fmt.Println(err)
-		return nil, err
+		return nil, err		
 	}
-
+	
 	encryptPw, err := crypto.PasswordEncrypt(password)
 	if err != nil {
 		fmt.Println("パスワード暗号化中にエラーが発生しました。：", err)
 		return nil, err
 	}
-
+	
 	user = User{
 		Password: encryptPw, 
 		Name: name, 
 		Email: email,
 	}
-
+	
 	result := Db.Create(&user)
 	if result.Error != nil {    
     	fmt.Println("エラー:", result.Error)
@@ -70,10 +70,11 @@ func Signup(email, name, password string) (*User, error) {
 	return &user, nil
 }
 
-func Login(userId, password string) (*User, error) {
+func Login(email, password string) (*User, error) {
 	user := User{}
-	Db.Where("user_id = ?", userId).First(&user)
-	if user.ID == 0 {
+	Db.Where("email = ?", email).First(&user)
+	fmt.Println(email)
+	if user.Email == "" {
 		err := errors.New("UserIdが一致するユーザーが存在しません。")
 		fmt.Println(err)
 		return nil, err

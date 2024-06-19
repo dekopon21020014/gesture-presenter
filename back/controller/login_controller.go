@@ -28,13 +28,13 @@ func getLogin(c *gin.Context) {
 }
 
 func postLogin(c *gin.Context) {
-	id := c.PostForm("user_id")
+	email := c.PostForm("email")
 	pw := c.PostForm("password")
 
-	user, err := model.Login(id, pw)
+	user, err := model.Login(email, pw)
 	if err != nil {
 		c.Redirect(301, "/login")
 		return
 	}
-	c.HTML(http.StatusOK, "top.html", gin.H{"user": user})
+	c.HTML(http.StatusOK, "home.html", gin.H{"user": user})
 }

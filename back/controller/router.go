@@ -5,10 +5,12 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 )
 
 func GetRouter() *gin.Engine {
 	router := gin.Default()
+	router.Use(cors.Default())
 	router.LoadHTMLGlob("view/*.html")
 
 	router.GET("/", getTop)

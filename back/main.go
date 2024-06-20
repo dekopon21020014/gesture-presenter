@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/kut-ase2024-group4/controller"
 )
 
 func main() {
-	router := gin.Default()
+	router := controller.GetRouter()
 	router.Run()
 }

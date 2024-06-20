@@ -52,7 +52,7 @@ func postLogin(c *gin.Context) {
 		return
 	}
 	cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
-	NewSession(c, cookieKey, string(user.ID))
+	NewSession(c, cookieKey, strconv.FormatUint(uint64(user.ID), 10))
 	c.Redirect(http.StatusFound, "/")
 }
 

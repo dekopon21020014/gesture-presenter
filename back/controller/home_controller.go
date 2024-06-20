@@ -7,49 +7,44 @@ import (
 	"github.com/kut-ase2024-group4/model"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
-/*
-func getTop(c *gin.Context) {
-	c.HTML(http.StatusOK, "home.html", nil)
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+        log.Fatalf("Error loading .env file")
+    }
 }
-*/
 
 func getMypage(c *gin.Context) {
     user := model.User{}
     cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
     userId := GetSession(c, cookieKey)
-    
-    if userId != nil {
-        // 型アサーションを使用してinterface{}をuintに変換
-        if uid, ok := userId.(uint); ok {
-            // model.GetUserByIDが*model.User型を返す場合
-            if userPtr, err := model.GetUserByID(uid); err == nil && userPtr != nil {
-                user = *userPtr
-            } else {
-                // エラーハンドリング（必要に応じてエラーログを出力）
-                log.Printf("Failed to get user by ID: %v", err)
-            }
-        } else {
-            // userIdがuintに変換できない場合のエラーハンドリング
-            log.Printf("userId is not of type uint")
-        }
+
+    userPtr, err := model.GetUserByID(userId)
+    if err != nil || userPtr == nil {
+        log.Printf("Failed to get user by id = %d, err = %v", userId, err)
+        c.HTML(http.StatusOK, "mypage.html", gin.H{"user": user})
+        return
     }
 
+    user = *userPtr
     c.HTML(http.StatusOK, "mypage.html", gin.H{"user": user})
 }
-
 
 func getTop(c *gin.Context) {
 	user := model.User{}
 	cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
-	userId := GetSession(c, cookieKey)	
-	if uid, ok := userId.(uint); ok {
-		if userPtr, err := model.GetUserByID(uid); err == nil && userPtr != nil {
-			user = *userPtr
-		}
-	}
+	userId := GetSession(c, cookieKey)
 
-	c.HTML(http.StatusOK, "home.html", gin.H{
-		"user": user,
-	})
+    userPtr, err := model.GetUserByID(userId)
+    if err != nil || userPtr == nil {
+        log.Printf("Failed to get user by id = %d, err = %v", userId, err)
+        c.HTML(http.StatusOK, "home.html", gin.H{"user": user})
+        return
+    }
+
+	user = *userPtr
+	c.HTML(http.StatusOK, "home.html", gin.H{"user": user})
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -32,18 +34,26 @@ func NewSession(c *gin.Context, cookieKey, redisValue string) {
 	c.SetCookie(cookieKey, newRedisKey, 0, "/", "localhost", false, false)
 }
 
-func GetSession(c *gin.Context, cookieKey string) interface{} {
-	redisKey, _ := c.Cookie(cookieKey)
+func GetSession(c *gin.Context, cookieKey string) int {
+	redisKey, _ := c.Cookie(cookieKey) 
 	redisValue, err := conn.Get(c, redisKey).Result()
+
 	switch {
 	case err == redis.Nil:
 		fmt.Println("SessionKeyが登録されていません。")
-		return nil
+		return -1
 	case err != nil:
 		fmt.Println("Session取得時にエラー発生：" + err.Error())
-		return nil
+		return -1
 	}
-	return redisValue
+
+    userId, err := strconv.Atoi(redisValue)
+    if err != nil {
+        log.Printf("Failed to convert redisValueStr to int: %v", err)
+        return -1 
+	}
+
+	return userId
 }
 
 func DeleteSession(c *gin.Context, cookieKey string) {

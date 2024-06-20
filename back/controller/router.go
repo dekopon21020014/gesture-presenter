@@ -31,11 +31,10 @@ func GetRouter() *gin.Engine {
 }
 
 func checkLogin() gin.HandlerFunc {
-	println("#######here is checkLogin()#########")
 	return func(c *gin.Context) {
 		cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
 		id := GetSession(c, cookieKey)
-		if id == nil {
+		if id < 0 {
 			c.Redirect(http.StatusFound, "/login")
 			c.Abort()
 		} else {
@@ -48,7 +47,7 @@ func checkLogout() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
 		id := GetSession(c, cookieKey)
-		if id != nil {
+		if id > 0 {
 			c.Redirect(http.StatusFound, "/")
 			c.Abort()
 		} else {

@@ -48,7 +48,7 @@ func Signup(email, name, password string) (*User, error) {
 	if user.ID != 0 {
 		err := errors.New("同一名のUserIdが既に登録されています。")
 		fmt.Println(err)
-		return nil, err		
+		return nil, err	
 	}
 	
 	encryptPw, err := crypto.PasswordEncrypt(password)
@@ -89,7 +89,7 @@ func Login(email, password string) (*User, error) {
 	return &user, nil
 }
 
-func GetUserByID(id uint) (*User, error) {
+func GetUserByID(id int) (*User, error) {
 	var user User
 	result := Db.Where("id = ?", id).First(&user)
 	if result.Error != nil {

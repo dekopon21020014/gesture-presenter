@@ -35,7 +35,7 @@ func NewSession(c *gin.Context, cookieKey, redisValue string) {
 }
 
 func GetSession(c *gin.Context, cookieKey string) int {
-	redisKey, _ := c.Cookie(cookieKey) 
+	redisKey, _ := c.Cookie(cookieKey)
 	redisValue, err := conn.Get(c, redisKey).Result()
 
 	switch {
@@ -47,10 +47,10 @@ func GetSession(c *gin.Context, cookieKey string) int {
 		return -1
 	}
 
-    userId, err := strconv.Atoi(redisValue)
-    if err != nil {
-        log.Printf("Failed to convert redisValueStr to int: %v", err)
-        return -1 
+	userId, err := strconv.Atoi(redisValue)
+	if err != nil {
+		log.Printf("Failed to convert redisValueStr to int: %v", err)
+		return -1
 	}
 
 	return userId

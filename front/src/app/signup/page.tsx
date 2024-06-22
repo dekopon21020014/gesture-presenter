@@ -7,8 +7,11 @@ export default function Home() {
 
   return (
     <main>
-      <h1>Sign Up</h1>
+      <h1>Sign Up </h1>
       <SignUpForm onSubmit={signUp} isLoading={ isLoading } />
+      <div> <a href="/mypage">mypage</a> </div>
+      <div><a href="/login">login</a> </div>
+      
     </main>
   );
 }

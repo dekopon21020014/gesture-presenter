@@ -10,10 +10,18 @@ import (
 
 func GetRouter() *gin.Engine {
 	router := gin.Default()
-	router.Use(cors.Default())
+
+	router.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"http://localhost:3000"}, // フロントエンドのオリジン
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+        AllowHeaders:     []string{"Origin", "Content-Type", "Cookie"},
+        AllowCredentials: true,
+    }))
+
 	router.LoadHTMLGlob("view/*.html")
 
 	router.GET("/", getTop)
+	router.GET("/verify-token", verifyToken)
 
 	loginCheckGroup := router.Group("/", checkLogin())
 	{
@@ -54,5 +62,15 @@ func checkLogout() gin.HandlerFunc {
 		} else {
 			c.Next()
 		}
+	}
+}
+
+func verifyToken(c *gin.Context) {
+	cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
+	id := GetSession(c, cookieKey)
+	if id < 0 { // no session
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "401: Unauthorized"})
+	} else { // authenticated
+		c.JSON(http.StatusOK, gin.H{"message": "200: Authorized"})
 	}
 }

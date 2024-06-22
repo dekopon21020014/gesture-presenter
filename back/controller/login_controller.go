@@ -31,11 +31,10 @@ func getSignup(c *gin.Context) {
 
 func postSignup(c *gin.Context) {	
 	var request User
-
     // JSONデータをパース
     if err := c.BindJSON(&request); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
+        return		
     }
 
 	user, err := model.Signup(request.Email, request.Name, request.Password)
@@ -45,7 +44,7 @@ func postSignup(c *gin.Context) {
 	}
 	cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
 	NewSession(c, cookieKey, strconv.FormatUint(uint64(user.ID), 10))
-	c.Redirect(http.StatusFound, "/")
+	c.JSON(http.StatusOK, gin.H{"message": "this message from c.JSON()"})
 }
 
 func getLogin(c *gin.Context) {
@@ -62,16 +61,16 @@ func postLogin(c *gin.Context) {
 
 	user, err := model.Login(request.Email, request.Password)
 	if err != nil {
-		c.Redirect(301, "/login")
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "401: Unauthorized"})
 		return
 	}
 	cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
 	NewSession(c, cookieKey, strconv.FormatUint(uint64(user.ID), 10))
-	c.Redirect(http.StatusFound, "/")
+	c.JSON(http.StatusOK, gin.H{"message": "loged in successfully"})
 }
 
 func getLogout(c *gin.Context) {
 	cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
 	DeleteSession(c, cookieKey)
-	c.Redirect(http.StatusFound, "/login")
+	c.JSON(http.StatusOK, gin.H{"message": "session is deleted"})
 }

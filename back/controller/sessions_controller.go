@@ -16,7 +16,7 @@ var conn *redis.Client
 
 func init() {
 	conn = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     "redis:6379",
 		Password: "",
 		DB:       0,
 	})
@@ -31,19 +31,19 @@ func NewSession(c *gin.Context, cookieKey, redisValue string) {
 	if err := conn.Set(c, newRedisKey, redisValue, 0).Err(); err != nil {
 		panic("Session登録時にエラーが発生：" + err.Error())
 	}
-	c.SetCookie(cookieKey, newRedisKey, 0, "/", "localhost", false, false)
+	c.SetCookie(cookieKey, newRedisKey, 3600, "/", "localhost", false, false)
 }
 
 func GetSession(c *gin.Context, cookieKey string) int {
 	redisKey, _ := c.Cookie(cookieKey)
-	redisValue, err := conn.Get(c, redisKey).Result()
+	redisValue, err := conn.Get(c, redisKey).Result()	
 
 	switch {
 	case err == redis.Nil:
 		fmt.Println("SessionKeyが登録されていません。")
 		return -1
 	case err != nil:
-		fmt.Println("Session取得時にエラー発生：" + err.Error())
+		fmt.Println("Session取得時にエラー発生: " + err.Error())
 		return -1
 	}
 

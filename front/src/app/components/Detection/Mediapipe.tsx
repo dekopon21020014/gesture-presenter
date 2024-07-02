@@ -35,21 +35,28 @@ export const Mediapipe = ({nextSlide, prevSlide}: MediapipeProps) => {
             const time = video.currentTime * oneSecMs;
             const poseResult = poseLandmarker!.detectForVideo(video, time);
             const gestureResult = gestureRecognizer!.recognizeForVideo(video, time);
-            const gestureLeft = gestureResult.gestures.at(0)?.at(0);
+            console.log(gestureResult);
+            const gestureLeft = gestureResult.gestures[0][0];
 
-            // リファクタリング必要。オブジェクト使って、ジェスチャーが増えてもコードがそこまで増えないようにしたい。
-            if(gestureLeft?.categoryName === "Open_Palm") {
-              countOpen++;
-            } else if (gestureLeft?.categoryName === "Pointing_Up") {
-              countPointer++;
-            }
-            if(countOpen > 4) {
-              console.log(gestureLeft);
+            // ジェスチャーによる判定 リファクタリング必要。オブジェクト使って、ジェスチャーが増えてもコードがそこまで増えないようにしたい。
+            // if(gestureLeft?.categoryName === "Open_Palm") {
+            //   countOpen++;
+            // } else if (gestureLeft?.categoryName === "Pointing_Up") {
+            //   countPointer++;
+            // }
+            // if(countOpen > 4) {
+            //   nextSlide();
+            //   countOpen = 0;
+            // } else if (countPointer > 4) {
+            //   prevSlide();
+            //   countPointer = 0;
+            // }
+
+            // 全身関節による判定
+            if(poseResult.landmarks[0][20].y < poseResult.landmarks[0][12].y) {
               nextSlide();
-              countOpen = 0;
-            } else if (countPointer) {
+            } else if (poseResult.landmarks[0][19].y < poseResult.landmarks[0][11].y) {
               prevSlide();
-              countPointer = 0;
             }
 
             lastVideoTime = video.currentTime;
@@ -57,7 +64,8 @@ export const Mediapipe = ({nextSlide, prevSlide}: MediapipeProps) => {
             console.log(e);
           }
         }
-        requestAnimationFrame(renderLoop);
+        // requestAnimationFrame(renderLoop);
+        setTimeout(renderLoop, (1/5)*1000);
       }
 
       if(video) {

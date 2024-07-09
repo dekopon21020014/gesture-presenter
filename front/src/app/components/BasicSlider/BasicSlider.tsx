@@ -8,6 +8,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import styles from './swiper.module.css';
 import { Mediapipe } from '../Detection/Mediapipe';
+import { Effects } from '../Effects/Effects';
 
 const images = [
   '/basicSlider/test1.jpeg',
@@ -84,6 +85,7 @@ const BasicSlider: React.FC = () => {
         ))}
       </Swiper>
       <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
+      <Effects/>
     </div>
   );
 };

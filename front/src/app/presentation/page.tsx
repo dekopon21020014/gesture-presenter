@@ -7,8 +7,9 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import styles from './swiper.module.css';
-import { Mediapipe } from '../Detection/Mediapipe';
-import { Effects } from '../Effects/Effects';
+import { Mediapipe } from '../Components/Detection/Mediapipe';
+import { Effects } from '../Components/Effects/Effects';
+
 
 const images = [
   '/basicSlider/test1.jpeg',

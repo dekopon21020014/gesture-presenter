@@ -1,5 +1,5 @@
 'use client';
-import { LogInForm } from '@/app/components/Form/LogInForm';
+import { LogInForm } from '@/app/Components/Form/LogInForm';
 import { useLogInForm } from './use-log-in-form';
 
 export default function Home() {

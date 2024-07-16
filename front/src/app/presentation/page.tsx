@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Navigation, Pagination } from 'swiper/modules';
@@ -7,8 +8,8 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import styles from './swiper.module.css';
-import { Mediapipe } from '../Components/Detection/Mediapipe';
-import { Effects } from '../Components/Effects/Effects';
+import { Mediapipe } from '../components/Detection/Mediapipe';
+import { Effects } from '../components/Effects/Effects';
 
 
 const images = [

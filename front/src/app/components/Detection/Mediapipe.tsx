@@ -9,7 +9,7 @@ interface MediapipeProps {
 }
 
 export const Mediapipe = ({nextSlide, prevSlide}: MediapipeProps) => {
-  const [canvasWidth, canvasHeight] = [480, 360];
+  const [canvasWidth, canvasHeight] = [200, 150];
   const oneSecMs = 1000; // 1秒のミリ秒換算
 
   const inputVideo = useRef<HTMLVideoElement>(null);

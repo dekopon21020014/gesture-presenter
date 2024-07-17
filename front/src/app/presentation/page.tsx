@@ -21,11 +21,11 @@ const images = [
 
 const slideSettings = {
   0: {
-    slidesPerView: 1.4,
+    slidesPerView: 1,
     spaceBetween: 10,
   },
   1024: {
-    slidesPerView: 2,
+    slidesPerView: 1,
     spaceBetween: 10,
   },
 };
@@ -61,32 +61,36 @@ const BasicSlider: React.FC = () => {
 
   return (
     <div>
-      <Swiper
-        modules={[Navigation, Pagination]}
-        breakpoints={slideSettings}
-        slidesPerView="auto"
-        centeredSlides
-        loop
-        speed={1000}
-        pagination={{ clickable: true }}
-        className={styles.slideWrapper}
-        onSwiper={(swiper) => { swiperInstanceRef.current = swiper; }}
-      >
-        {images.map((src, index) => (
-          <SwiperSlide key={index}>
-            <Image
-              src={src}
-              width={1920}
-              height={1038}
-              alt={`Slider Image ${index + 1}`}
-              sizes="(min-width: 1024px) 100vw, 60vw"
-              loading="eager"
-              className={styles.slideImage}
-            />
-          </SwiperSlide>
-        ))}
-      </Swiper>
-      <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
+      <div className="static">
+        <Swiper
+          modules={[Navigation, Pagination]}
+          breakpoints={slideSettings}
+          slidesPerView="auto"
+          centeredSlides
+          loop
+          speed={1000}
+          pagination={{ clickable: true }}
+          className="h-dvh"
+          onSwiper={(swiper) => { swiperInstanceRef.current = swiper; }}
+        >
+          {images.map((src, index) => (
+            <SwiperSlide key={index}>
+              <Image
+                src={src}
+                width={1920}
+                height={1038}
+                alt={`Slider Image ${index + 1}`}
+                sizes="(min-width: 1024px) 100vw, 60vw"
+                loading="eager"
+                className="h-full object-cover"
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+      <div className="absolute top-0 right-0 z-10" >
+        <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
+      </div>
       <Effects/>
     </div>
   );

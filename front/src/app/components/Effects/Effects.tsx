@@ -14,6 +14,8 @@ export const Effects: React.FC = () => {
         }
       } else if (event.key === '2') {
         Good();
+      } else if (event.key === '3') {
+        playSound('/SoundsRoom/dodon.mp3');
       }
     };
 

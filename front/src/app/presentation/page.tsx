@@ -10,6 +10,7 @@ import 'swiper/css/pagination';
 import styles from './swiper.module.css';
 import { Mediapipe } from '../components/Detection/Mediapipe';
 import { Effects } from '../components/Effects/Effects';
+import { Sounds } from '../components/Sounds/Sounds';
 
 
 const images = [
@@ -92,6 +93,7 @@ const BasicSlider: React.FC = () => {
         <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
       </div>
       <Effects/>
+      <Sounds/>
     </div>
   );
 };

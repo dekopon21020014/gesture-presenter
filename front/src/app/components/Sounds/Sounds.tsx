@@ -17,6 +17,8 @@ export const Sounds: React.FC = () => {
                 playSound('/SoundsRoom/whoo.mp3');
             } else if (event.key === '3') {
                 playSound('/SoundsRoom/dodon.mp3');
+            } else if (event.key === '5') {
+                playSound('/SoundsRoom/usodaro.mp3');
             }
         };
 

@@ -1,4 +1,3 @@
-import { DrawingUtils, GestureRecognizer, NormalizedLandmark, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react"
 import { useMediaPipe } from "./useMediapipe";
 import { PoseCanvas } from "./PoseCanvas";
@@ -10,9 +9,11 @@ interface MediapipeProps {
   prevSlide: () => void;
 }
 
+
 export const Mediapipe = ({ nextSlide, prevSlide }: MediapipeProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { poseResultRef } = useMediaPipe(videoRef, nextSlide, prevSlide);
+
 
   useStream(videoRef, CANVAS_WIDTH, CANVAS_HEIGHT);
   

@@ -35,7 +35,6 @@ export const Mediapipe = ({nextSlide, prevSlide}: MediapipeProps) => {
             const time = video.currentTime * oneSecMs;
             const poseResult = poseLandmarker!.detectForVideo(video, time);
             const gestureResult = gestureRecognizer!.recognizeForVideo(video, time);
-            console.log(gestureResult);
             const gestureLeft = gestureResult.gestures[0][0];
 
             // ジェスチャーによる判定 リファクタリング必要。オブジェクト使って、ジェスチャーが増えてもコードがそこまで増えないようにしたい。

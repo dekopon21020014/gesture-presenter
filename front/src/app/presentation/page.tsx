@@ -11,6 +11,7 @@ import { Effects } from '../components/Effects/Effects';
 import { Sounds } from '../components/Sounds/Sounds';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
+import { usePdfSlider } from './usePdfSlider';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -27,7 +28,7 @@ const slideSettings = {
 
 const BasicSlider: React.FC = () => {
   const swiperInstanceRef = useRef<SwiperClass | null>(null);
-  const [images, setImages] = useState<string[]>([]);
+  const [ images ] = usePdfSlider(swiperInstanceRef);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -45,43 +46,7 @@ const BasicSlider: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
-
-  useEffect(() => {
-    const url = '/basicSlider/pdfslide.pdf';  // PDFファイルのパス
-
-    const loadPdf = async () => {
-      const loadingTask = pdfjsLib.getDocument(url);
-      const pdf = await loadingTask.promise;
-      const tempImages: string[] = [];
-
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-        const page = await pdf.getPage(pageNumber);
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-
-        if (context) {
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          await page.render({ canvasContext: context, viewport: viewport }).promise;
-          const img = canvas.toDataURL();
-          tempImages.push(img);
-        }
-      }
-
-      setImages(tempImages);
-    };
-
-    loadPdf();
-  }, []);
-
-  useEffect(() => {
-    if (swiperInstanceRef.current) {
-      swiperInstanceRef.current.slideTo(0, 0);  // 初期スライドを設定
-    }
-  }, [images]);
+  }, []);  
 
   const nextSlide = () => {
     swiperInstanceRef.current!.slideNext();
@@ -111,7 +76,7 @@ const BasicSlider: React.FC = () => {
               <img
                 src={src}
                 alt={`Slider Image ${index + 1}`}
-                className="h-full object-cover"
+                className="h-full object-cover w-full"
               />
             </SwiperSlide>
           ))}

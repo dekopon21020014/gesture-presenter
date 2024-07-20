@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import {Clap} from './clap';
 import {Good} from './good';
+import { Sad } from './sad';
+import { Happy } from './Happy';
 
 export const Effects: React.FC = () => {
   useEffect(() => {
@@ -12,7 +14,11 @@ export const Effects: React.FC = () => {
         }
       } else if (event.key === '2') {
         Good();
-      }
+      } else if (event.key === '4') {
+        Sad();
+      } else if (event.key === '6') {
+        Happy();
+      } 
     };
 
     window.addEventListener('keydown', handleKeyDown);

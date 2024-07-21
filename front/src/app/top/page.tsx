@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Button, Typography, Box, Grid, Paper } from '@mui/material';
+import { AppBar, Toolbar, Button, Typography, Box, Grid, Paper, useMediaQuery, useTheme } from '@mui/material';
 import Link from 'next/link';
 import Image from 'next/image';
 import './font.css';
@@ -9,14 +9,14 @@ import PDFUploader from '../components/Form/FileUpForm';
 const Top = () => {
     const [showService, setShowService] = useState(false);
     const [showHeader, setShowHeader] = useState(false);
-    const [showContent, setShowContent] = useState(false); // 追加
-    const [showButton, setShowButton] = useState(false); 
+    const [showContent, setShowContent] = useState(false);
+    const [showButton, setShowButton] = useState(false);
 
     const handleScroll = () => {
         const scrollPosition = window.scrollY + window.innerHeight;
         const serviceElement = document.getElementById('service-section');
         const headerElement = document.getElementById('header-section');
-        const contentElement = document.getElementById('content-section'); // 追加
+        const contentElement = document.getElementById('content-section');
         const buttonElement = document.getElementById('button-section');
 
         if (headerElement && scrollPosition > headerElement.offsetTop) {
@@ -27,11 +27,11 @@ const Top = () => {
             setShowService(true);
         }
 
-        if (contentElement && scrollPosition > contentElement.offsetTop) { // 追加
+        if (contentElement && scrollPosition > contentElement.offsetTop) {
             setShowContent(true);
         }
 
-        if (buttonElement && scrollPosition > buttonElement.offsetTop) { // 追加
+        if (buttonElement && scrollPosition > buttonElement.offsetTop) {
             setShowButton(true);
         }
     };
@@ -44,6 +44,10 @@ const Top = () => {
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMediumScreen = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
     return (
         <Box sx={{ backgroundColor: '#f7f7f7', margin: 0 }}>
@@ -66,9 +70,9 @@ const Top = () => {
                                 color="inherit"
                                 sx={{
                                     marginRight: 2,
-                                    width: '180px',
+                                    width: isSmallScreen ? '120px' : '180px',
                                     height: '50px',
-                                    fontSize: '1.25rem',
+                                    fontSize: isSmallScreen ? '1rem' : '1.25rem',
                                     fontWeight: 'bold'
                                 }}
                             >
@@ -79,9 +83,9 @@ const Top = () => {
                             <Button
                                 color="inherit"
                                 sx={{
-                                    width: '180px',
+                                    width: isSmallScreen ? '120px' : '180px',
                                     height: '50px',
-                                    fontSize: '1.25rem',
+                                    fontSize: isSmallScreen ? '1rem' : '1.25rem',
                                     fontWeight: 'bold'
                                 }}
                             >
@@ -123,8 +127,12 @@ const Top = () => {
                         transition: 'transform 2.5s ease, opacity 1.5s ease'
                     }}
                 >
-                    <Typography variant="h3" component="h3" sx={{ color: 'white', letterSpacing: 3 }}>
-                        上質なプレゼンをあなたの手に
+                    <Typography
+                        variant={isSmallScreen ? 'h4' : isMediumScreen ? 'h4' : 'h4'}
+                        component="h4"
+                        sx={{ color: 'white', letterSpacing: 3 }}
+                    >
+                        上質なプレゼンをあなたに
                     </Typography>
                 </Box>
             </Box>
@@ -146,10 +154,10 @@ const Top = () => {
                     transition: 'transform 2.5s ease, opacity 1s ease'
                 }}
             >
-                <Typography variant="h2" component="h2" sx={{ marginTop: '10vh', marginBottom: '2vh', fontFamily: "Bebas Neue" }}>
+                <Typography variant={isSmallScreen ? 'h3' : 'h2'} component="h2" sx={{ marginTop: '10vh', marginBottom: '2vh', fontFamily: "Bebas Neue" }}>
                     SERVICE
                 </Typography>
-                <Typography variant="h6" sx={{ maxWidth: '800px', lineHeight: 1.7 }}>
+                <Typography variant="h6" sx={{ maxWidth: '800px', lineHeight: 1.7, padding: isSmallScreen ? '0 10px' : '0' }}>
                     私たちはジェスチャーに応じたスライド操作を行うプレゼン支援ツールを提供します。<br />
                     カメラのあなたがとったジェスチャーを認識し、<br />
                     スライド操作、動作に応じたエフェクト・効果音の出現など、<br />
@@ -159,23 +167,22 @@ const Top = () => {
 
             {/* Content Section */}
             <Box
-                id="content-section" // 追加
+                id="content-section"
                 sx={{
                     backgroundColor: '#FFFAF0',
                     padding: '5vh 5vh',
                     display: 'flex',
                     justifyContent: 'center',
-                    alignItems: 'center',
+                    alignItems: 'stretch', // Add this line
                     textAlign: 'center',
                     gap: 3,
                     flexDirection: 'column',
-                    transform: showContent ? 'translateX(0)' : 'translateX(-100px)', // 追加
-                    opacity: showContent ? 1 : 0, // 追加
-                    transition: 'transform 2.5s ease, opacity 1s ease' // 追加
+                    transform: showContent ? 'translateX(0)' : 'translateX(-100px)',
+                    opacity: showContent ? 1 : 0,
+                    transition: 'transform 2.5s ease, opacity 1s ease'
                 }}
             >
-
-                <Typography variant="h2" component="h2" sx={{ fontFamily: "Bebas Neue" }}>
+                <Typography variant={isSmallScreen ? 'h3' : 'h2'} component="h2" sx={{ fontFamily: "Bebas Neue" }}>
                     EFFECT
                 </Typography>
                 <Typography variant="h6" component="h6" sx={{ marginBottom: '1vh' }}>
@@ -185,9 +192,10 @@ const Top = () => {
                     sx={{
                         display: 'flex',
                         justifyContent: 'center',
-                        alignItems: 'center',
+                        alignItems: 'stretch', // Add this line
                         textAlign: 'center',
                         gap: 3,
+                        flexDirection: isSmallScreen ? 'column' : 'row',
                     }}
                 >
                     {Array.from({ length: 3 }).map((_, index) => (
@@ -195,9 +203,13 @@ const Top = () => {
                             key={index}
                             sx={{
                                 padding: 5,
-                                width: '25%',
+                                width: isSmallScreen ? '80%' : '25%',
                                 textAlign: 'center',
                                 backgroundColor: '#FFF5EE',
+                                marginBottom: isSmallScreen ? '20px' : '0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between', // Add this line
                             }}
                         >
                             <Image
@@ -207,20 +219,22 @@ const Top = () => {
                                 height={150}
                                 style={{ objectFit: 'contain', marginBottom: '1rem' }}
                             />
-                            <Typography variant="h5" sx={{ marginTop: '1vh', marginBottom: '3vh', fontWeight: 900}}>
-                            {index === 0 && "プレゼンの円滑化"}
-                            {index === 1 && "緊張の緩和"}
-                            {index === 2 && "説得力の増加"}
+                            <Typography variant="h5" sx={{ marginTop: '1vh', marginBottom: '3vh', fontWeight: 900 }}>
+                                {index === 0 && "プレゼンの円滑化"}
+                                {index === 1 && "緊張の緩和"}
+                                {index === 2 && "説得力の増加"}
                             </Typography>
                             <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
-                            {index === 0 && "キーボードやボタン押下などの操作をせずとも、ジェスチャー1つでページ送り・戻りを行うことができます。これによりプレゼンテーションの進行をよりスムーズにすることができます。"}
-                            {index === 1 && "エフェクトや効果音の出現は話し手・聞き手の両者に頬のほころびを誘い、発表に”緊張と緩和”をもたらします。またジェスチャーで体を動かすことによる緊張の緩和も期待できます。"}
-                            {index === 2 && "スライド操作に伴うジェスチャーによって、あなたの発表はより動的になり、聞き手の興味関心を引くことが可能になります。これにより発表の説得力増加を期待できることでしょう。"}
+                                {index === 0 && "キーボードやボタン押下などの操作をせずとも、ジェスチャー1つでページ送り・戻りを行うことができます。これによりプレゼンテーションの進行をよりスムーズにすることができます。"}
+                                {index === 1 && "エフェクトや効果音の出現は話し手・聞き手の両者に頬のほころびを誘い、発表に”緊張と緩和”をもたらします。またジェスチャーで体を動かすことによる緊張の緩和も期待できます。"}
+                                {index === 2 && "スライド操作に伴うジェスチャーによって、あなたの発表はより動的になり、聞き手の興味関心を引くことが可能になります。これにより発表の説得力増加を期待できることでしょう。"}
                             </Typography>
                         </Paper>
                     ))}
                 </Box>
             </Box>
+
+            {/* Button Section */}
             <Box
                 sx={{
                     backgroundColor: 'white',
@@ -234,7 +248,7 @@ const Top = () => {
                 }}
             >
                 <Paper
-                    id="button-section" // 追加
+                    id="button-section"
                     sx={{
                         padding: '3vh 6vw',
                         border: '4px solid black',
@@ -243,9 +257,9 @@ const Top = () => {
                         textAlign: 'center',
                         backgroundColor: '#FFF5EE',
                         flexDirection: 'column',
-                        transform: showContent ? 'translateY(0)' : 'translateY(100px)', // 追加
-                        opacity: showContent ? 1 : 0, // 追加
-                        transition: 'transform 2.5s ease, opacity 1s ease' // 追加
+                        transform: showButton ? 'translateY(0)' : 'translateY(100px)',
+                        opacity: showButton ? 1 : 0,
+                        transition: 'transform 2.5s ease, opacity 1s ease'
                     }}
                 >
                     <Typography variant="h5" component="p" gutterBottom sx={{ marginBottom: 3 }}>
@@ -258,9 +272,9 @@ const Top = () => {
                                     variant="contained"
                                     color="primary"
                                     sx={{
-                                        width: '200px',
-                                        height: '60px',
-                                        fontSize: '1.5rem'
+                                        width: isSmallScreen ? '150px' : '200px',
+                                        height: isSmallScreen ? '50px' : '60px',
+                                        fontSize: isSmallScreen ? '1.2rem' : '1.5rem'
                                     }}
                                 >
                                     ログイン
@@ -273,9 +287,9 @@ const Top = () => {
                                     variant="contained"
                                     color="secondary"
                                     sx={{
-                                        width: '200px',
-                                        height: '60px',
-                                        fontSize: '1.5rem'
+                                        width: isSmallScreen ? '150px' : '200px',
+                                        height: isSmallScreen ? '50px' : '60px',
+                                        fontSize: isSmallScreen ? '1.2rem' : '1.5rem'
                                     }}
                                 >
                                     新規登録

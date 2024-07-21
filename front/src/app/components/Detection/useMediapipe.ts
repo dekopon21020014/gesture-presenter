@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PoseLandmarker, GestureRecognizer, PoseLandmarkerResult } from "@mediapipe/tasks-vision";
+import { PoseLandmarker, GestureRecognizer, PoseLandmarkerResult, GestureRecognizerResult } from "@mediapipe/tasks-vision";
 import { setupGestureRecognizer, setupPoseLandmarker } from "./modelSettings";
-import { ONE_SEC_MS, FRAME_RATE } from "./constants";
+import { ONE_SEC_MS, FRAME_RATE } from "../../consts/videoInfo";
+import { PoseIndex } from "@/app/consts/landmarkIndex";
+import { Good } from "../Effects/good";
+import { Sad } from "../Effects/sad";
+import { Clap } from "../Effects/clap";
+
+
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -12,9 +18,9 @@ export const useMediaPipe = (
   const gestureRecognizerRef = useRef<GestureRecognizer | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [poseResult, setPoseResult] = useState<PoseLandmarkerResult | null>(null);
+  const [gestureResult, setGestureResult] = useState<GestureRecognizerResult | null>(null);
   const lastVideoTimeRef = useRef(-1);
   const isRenderLoopRunning = useRef(false);
-  // const poseResultRef = useRef<PoseLandmarkerResult | null>(null);
 
   const initializeTasks = useCallback(async () => {
     try {
@@ -27,16 +33,57 @@ export const useMediaPipe = (
   }, []);
 
   const processFrame = useCallback((video:HTMLVideoElement, time:number) => {
-    const result = poseLandmarkerRef.current!.detectForVideo(video, time);
-    setPoseResult(result);
-    gestureRecognizerRef.current!.recognizeForVideo(video, time);
+    const resultPose = poseLandmarkerRef.current!.detectForVideo(video, time);
+    const resultGesture = gestureRecognizerRef.current!.recognizeForVideo(video, time);
 
-    if (result.landmarks[0][20].y < result.landmarks[0][12].y) {
-      nextSlide();
-    } else if (result.landmarks[0][19].y < result.landmarks[0][11].y) {
-      prevSlide();
+    if (!resultPose || !resultGesture) return;
+
+    setPoseResult(resultPose);
+    setGestureResult(resultGesture);
+    const landmark = resultPose.landmarks[0];
+    const gestures = resultGesture.gestures;
+
+    if (!landmark || gestures.length === 0) return;
+
+    const [gestureA, gestureB] = gestures;
+    
+    const gestureLabelA = gestureA?.[0]?.categoryName ?? '';
+    const gestureLabelB = gestureB?.[0]?.categoryName ?? '';
+
+    const { wrist, shoulder, eye } = PoseIndex.Side;
+
+    const isHandAboveShoulder = (side: 'left' | 'right') => 
+      landmark[wrist[side]].y < landmark[shoulder[side]].y;
+  
+    const isHandBelowEyes = () => 
+      landmark[wrist.right].y > landmark[eye.outer.right].y &&
+      landmark[wrist.left].y > landmark[eye.outer.left].y;
+  
+    const areHandsCloseToEyes = () => 
+      landmark[eye.outer.right].x - landmark[wrist.right].x < 0.2 &&
+      landmark[wrist.left].x - landmark[eye.outer.left].x < 0.2;
+
+    switch(gestureLabelA) {
+      case 'Open_Palm':
+        if (isHandAboveShoulder('right')) {
+          nextSlide();
+        } else if (isHandAboveShoulder('right')) {
+          prevSlide();
+        } else if (gestureLabelB == 'Open_Palm') {
+          Clap();
+        }
+        break;
+      case 'Thumb_Up':
+        Good();
+        break;
+      default:
+        if (isHandBelowEyes() && areHandsCloseToEyes()) {
+          Sad();
+        }
+        break;
     }
-  }, [nextSlide, prevSlide]);
+    
+  }, [nextSlide, prevSlide, Good, Sad]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;

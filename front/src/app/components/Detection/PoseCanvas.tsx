@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { DrawingUtils, NormalizedLandmark, PoseLandmarker } from "@mediapipe/tasks-vision";
 // import { PoseDetectionResult } from "./types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "./constants";
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../consts/videoInfo";
 import { PoseDetectionResult } from "./type";
 
 interface PoseCanvasProps {

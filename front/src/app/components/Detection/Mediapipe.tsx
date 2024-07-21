@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useMediaPipe } from "./useMediapipe";
 import { PoseCanvas } from "./PoseCanvas";
-import { CAMERA_HEIGHT, CAMERA_WIDTH, CANVAS_HEIGHT, CANVAS_WIDTH } from "./constants";
+import { CAMERA_HEIGHT, CAMERA_WIDTH, CANVAS_HEIGHT, CANVAS_WIDTH } from "../../consts/videoInfo";
 import { useStream } from "./useStream";
 
 interface MediapipeProps {

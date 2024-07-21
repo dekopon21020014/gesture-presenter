@@ -1,7 +1,8 @@
-import { RefObject, useEffect, useRef } from "react";
+import { RefObject, useEffect, useRef, useState } from "react";
 
 export const useStream = (inputVideo: RefObject<HTMLVideoElement>, width: number, height: number) => {
   const mediaStream = useRef<MediaStream | null>(null);
+  const [streamReady, setStreamReady] = useState(false);
   
    // コンポーネントのマウント時にカメラのストリームを確保する
    useEffect(() => {
@@ -19,12 +20,17 @@ export const useStream = (inputVideo: RefObject<HTMLVideoElement>, width: number
       if (inputVideo && mediaStream.current) {
         inputVideo.current!.srcObject = mediaStream.current;
       }
+
+      setStreamReady(true);
     }
     setupCamera();
     
     return (() => {
       ignore = true;
       mediaStream.current?.getTracks().forEach(track => track.stop())
-    })
-  });
+    });
+
+  }, [inputVideo, width, height]);
+
+  return { streamReady }
 }

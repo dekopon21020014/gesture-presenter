@@ -128,11 +128,11 @@ const Top = () => {
                     }}
                 >
                     <Typography
-                        variant={isSmallScreen ? 'h4' : isMediumScreen ? 'h3' : 'h2'}
-                        component="h3"
+                        variant={isSmallScreen ? 'h4' : isMediumScreen ? 'h4' : 'h4'}
+                        component="h4"
                         sx={{ color: 'white', letterSpacing: 3 }}
                     >
-                        上質なプレゼンを
+                        上質なプレゼンをあなたに
                     </Typography>
                 </Box>
             </Box>

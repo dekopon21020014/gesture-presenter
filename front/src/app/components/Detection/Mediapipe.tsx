@@ -9,7 +9,6 @@ interface MediapipeProps {
   prevSlide: () => void;
 }
 
-
 export const Mediapipe = ({ nextSlide, prevSlide }: MediapipeProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { poseResult, isReady } = useMediaPipe(videoRef, nextSlide, prevSlide);

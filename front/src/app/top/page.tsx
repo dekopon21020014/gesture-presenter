@@ -4,6 +4,7 @@ import { AppBar, Toolbar, Button, Typography, Box, Grid, Paper, useMediaQuery, u
 import Link from 'next/link';
 import Image from 'next/image';
 import './font.css';
+import PDFUploader from '../components/Form/FileUpForm';
 
 const Top = () => {
     const [showService, setShowService] = useState(false);
@@ -92,6 +93,7 @@ const Top = () => {
                             </Button>
                         </Link>
                     </Box>
+                    <PDFUploader />
                 </Toolbar>
             </AppBar>
 

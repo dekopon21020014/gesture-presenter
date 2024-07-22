@@ -1,69 +1,95 @@
 "use client"
 
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Typography, 
+  Button, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  Paper, 
+  Box 
+} from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
+import FileIcon from '@mui/icons-material/InsertDriveFile';
 
 const MyPage = () => {
-    const handleLogout = async (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-        event.preventDefault(); // デフォルトのリンク動作を防ぐ
+    const [files, setFiles] = useState([]);
+
+    const handleLogout = async () => {
         try {
             const response = await fetch('http://localhost:8080/logout', {
                 method: 'GET',
-                credentials: 'include', // cookieを送信するために必要
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 }
             });
             if (response.ok) {
-                // ログアウト成功
-                window.location.href = '/login'; // ログインページにリダイレクト
-                console.error('Logout successfully');
+                window.location.href = '/login';
+                console.log('Logout successful');
             } else {
-                // ログアウト失敗
                 console.error('Logout failed');
             }
         } catch (error) {
             console.error('Error during logout:', error);
         }
-
     }
 
-    const [files, setFiles] = useState([]);
     useEffect(() => {
-        console.log("@@@@@@@@@@@@@here########")
         const fetchFiles = async () => {
-        try {
-            const response = await fetch('http://localhost:8080/api/pdf', { 
-                method: 'GET',
-                credentials: 'include', // cookieを送信するために必要
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            const data = await response.json()
-            setFiles(data)
-
-        } catch (error) {
-            console.error('Error fetching files:', error);
-        }
+            try {
+                const response = await fetch('http://localhost:8080/api/pdf', { 
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                setFiles(data);
+            } catch (error) {
+                console.error('Error fetching files:', error);
+            }
         };
 
         fetchFiles();
     }, []);    
 
     return (
-        <div>
-            <h1>My Page</h1>
-            <p>This is a protected page that only authenticated users can access.</p>
-            <a href="/logout" onClick={handleLogout}>logout</a>
+        <Container maxWidth="md">
+            <Box sx={{ my: 4 }}>
+                <Typography variant="h4" component="h1" gutterBottom>
+                    My Page
+                </Typography>
+                <Typography variant="body1" paragraph>
+                    This is a protected page that only authenticated users can access.
+                </Typography>
+                <Button 
+                    variant="contained" 
+                    color="secondary" 
+                    onClick={handleLogout}
+                    startIcon={<LogoutIcon />}
+                >
+                    Logout
+                </Button>
+            </Box>
 
-            <h1>Your Files</h1>
-            <ul>
-                {files.map((file, index) => (
-                <li key={index}>{file}</li>
-                ))}
-            </ul>
-        </div>        
+            <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
+                <Typography variant="h5" component="h2" gutterBottom>
+                    Your Files
+                </Typography>
+                <List>
+                    {files.map((file, index) => (
+                        <ListItem key={index}>
+                            <FileIcon sx={{ mr: 2 }} />
+                            <ListItemText primary={file} />
+                        </ListItem>
+                    ))}
+                </List>
+            </Paper>
+        </Container>
     );
 };
 

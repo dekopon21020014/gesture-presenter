@@ -1,0 +1,94 @@
+'use client';
+import React, { useEffect, useRef, useState } from 'react';
+import { Navigation, Pagination } from 'swiper/modules';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Swiper as SwiperClass } from 'swiper/types';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+import { Mediapipe } from '../components/Detection/Mediapipe';
+import { Effects } from '../components/Effects/Effects';
+import { Sounds } from '../components/Sounds/Sounds';
+import * as pdfjsLib from 'pdfjs-dist';
+import 'pdfjs-dist/build/pdf.worker.min.mjs';
+import { usePdfSlider } from './usePdfSlider';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+
+const slideSettings = {
+  0: {
+    slidesPerView: 1,
+    spaceBetween: 10,
+  },
+  1024: {
+    slidesPerView: 1,
+    spaceBetween: 10,
+  },
+};
+
+const BasicSlider: React.FC = () => {
+  const swiperInstanceRef = useRef<SwiperClass | null>(null);
+  const [ images ] = usePdfSlider(swiperInstanceRef);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!swiperInstanceRef.current) return;
+
+      if (event.key === 'ArrowRight') {
+        swiperInstanceRef.current.slideNext();
+      } else if (event.key === 'ArrowLeft') {
+        swiperInstanceRef.current.slidePrev();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);  
+
+  const nextSlide = () => {
+    swiperInstanceRef.current!.slideNext();
+  };
+
+  const prevSlide = () => {
+    swiperInstanceRef.current!.slidePrev();
+  };
+
+  return (
+    <div>
+      <div className="static">
+        <Swiper
+          modules={[Navigation, Pagination]}
+          breakpoints={slideSettings}
+          slidesPerView="auto"
+          centeredSlides
+          loop
+          speed={1000}
+          pagination={{ clickable: true }}
+          initialSlide={0}  // 初期表示で1ページ目を指定
+          className="h-dvh"
+          onSwiper={(swiper) => { swiperInstanceRef.current = swiper; }}
+        >
+          {images.map((src, index) => (
+            <SwiperSlide key={index}>
+              <img
+                src={src}
+                alt={`Slider Image ${index + 1}`}
+                className="h-full object-cover w-full"
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+      <div className="absolute top-0 right-0 z-10" >
+        <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
+      </div>
+      <Effects/>
+      <Sounds/>
+    </div>
+  );
+};
+
+export default BasicSlider;

@@ -1,0 +1,29 @@
+.parentSwiper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    /* overflow: hidden; */
+}
+
+.childVideo {
+    position: absolute;
+    top: 0;
+    
+    z-index: 1;
+}
+
+.slideWrapper {
+    height: 100%;
+}
+
+.slideImage {
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    height: 100%;
+}
+
+@media screen and (min-width: 768px) {
+    .slideImage {
+        aspect-ratio: initial;
+    }
+}

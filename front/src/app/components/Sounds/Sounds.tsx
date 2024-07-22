@@ -1,5 +1,10 @@
 import React, { useEffect } from "react";
 
+export const playClapSound = () => playSound('/SoundsRoom/whoo.mp3');
+export const playGoodSound = () => playSound('/SoundsRoom/dodon.mp3');
+export const playBadSound = () => playSound('/SoundsRoom/usodaro.mp3');
+
+
 const playSound = (soundFile: string) => {
     if (typeof window !== 'undefined') {
         const audio = new Audio(soundFile);

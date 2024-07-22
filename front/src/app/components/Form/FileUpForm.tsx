@@ -27,7 +27,6 @@ export const PDFUploader: React.FC = () => {
         method: 'POST',
         body: formData,
       });
-
       if (response.ok) {
         const data = await response.json();
         console.log('File uploaded successfully:', data);

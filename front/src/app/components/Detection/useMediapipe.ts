@@ -6,6 +6,7 @@ import { PoseIndex } from "@/app/consts/landmarkIndex";
 import { Good } from "../Effects/good";
 import { Sad } from "../Effects/sad";
 import { Clap } from "../Effects/clap";
+import { playBadSound, playClapSound, playGoodSound } from "../Sounds/Sounds";
 
 
 
@@ -56,8 +57,8 @@ export const useMediaPipe = (
       landmark[wrist[side]].y < landmark[shoulder[side]].y;
   
     const isHandBelowEyes = () => 
-      landmark[wrist.right].y > landmark[eye.outer.right].y &&
-      landmark[wrist.left].y > landmark[eye.outer.left].y;
+      landmark[wrist.right].y < landmark[eye.outer.right].y &&
+      landmark[wrist.left].y < landmark[eye.outer.left].y;
   
     const areHandsCloseToEyes = () => 
       landmark[eye.outer.right].x - landmark[wrist.right].x < 0.2 &&
@@ -65,25 +66,28 @@ export const useMediaPipe = (
 
     switch(gestureLabelA) {
       case 'Open_Palm':
-        if (isHandAboveShoulder('right')) {
+        if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
           nextSlide();
-        } else if (isHandAboveShoulder('right')) {
+        } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
           prevSlide();
         } else if (gestureLabelB == 'Open_Palm') {
           Clap();
+          playClapSound();
         }
         break;
       case 'Thumb_Up':
         Good();
+        playGoodSound();
         break;
       default:
         if (isHandBelowEyes() && areHandsCloseToEyes()) {
           Sad();
+          playBadSound();
         }
         break;
     }
     
-  }, [nextSlide, prevSlide, Good, Sad]);
+  }, [nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;

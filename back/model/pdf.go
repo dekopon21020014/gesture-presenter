@@ -25,3 +25,9 @@ func InsertPdf(filename string, content []byte, userId int) error {
 
 	return nil
 }
+
+func GetPdfs(userId int) []PDF {
+	var files []PDF
+	Db.Where("user_id = ?", userId).Select("filename").Find(&files)
+	return files
+}

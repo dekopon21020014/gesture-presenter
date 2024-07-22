@@ -6,4 +6,11 @@ $CMD_MYSQL -e "create table users (
     email char(128) NOT NULL,
     name char(128) NOT NULL,
     password char(128) NOT NULL
-    );"
+);"
+
+$CMD_MYSQL -e "CREATE TABLE pdfs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    content LONGBLOB NOT NULL,
+    user_id int NOT NULL
+);"

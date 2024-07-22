@@ -35,6 +35,7 @@ func init() {
 
 	// Migrate the schema
 	Db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&User{})
+	Db.Set("gorm:table_options", "ENGINE=InnoDB").AutoMigrate(&PDF{})
 }
 
 func (u *User) LoggedIn() bool {

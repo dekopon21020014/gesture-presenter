@@ -12,7 +12,6 @@ export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClas
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log('PDF files:', data.files);
       // ここでdata.filesを使用して、UIにファイル一覧を表示するなどの処理を行います
     } catch (error) {
       console.error('Error fetching file list:', error);

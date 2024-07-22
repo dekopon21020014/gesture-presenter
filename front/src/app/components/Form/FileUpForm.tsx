@@ -16,7 +16,6 @@ export const PDFUploader: React.FC = () => {
 
   const handleUpload = async () => {
     if (!file) return;
-
     setUploading(true);
 
     const formData = new FormData();

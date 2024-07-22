@@ -8,8 +8,6 @@ import { Sad } from "../Effects/sad";
 import { Clap } from "../Effects/clap";
 import { playBadSound, playClapSound, playGoodSound } from "../Sounds/Sounds";
 
-
-
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
   nextSlide: () => void,
@@ -18,10 +16,13 @@ export const useMediaPipe = (
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const gestureRecognizerRef = useRef<GestureRecognizer | null>(null);
   const [isReady, setIsReady] = useState(false);
+  // const [isPostImageTime, setIsPostImageTime] = useState(false);
   const [poseResult, setPoseResult] = useState<PoseLandmarkerResult | null>(null);
   const [gestureResult, setGestureResult] = useState<GestureRecognizerResult | null>(null);
   const lastVideoTimeRef = useRef(-1);
+  const lastPostTimeRef = useRef(0);
   const isRenderLoopRunning = useRef(false);
+
 
   const initializeTasks = useCallback(async () => {
     try {
@@ -92,9 +93,10 @@ export const useMediaPipe = (
   const renderLoop = useCallback(() => {
     const video = videoRef.current;
     if (!video || !isReady) return;
-    if (video.currentTime !== lastVideoTimeRef.current) {
+    const currentTime = video.currentTime;
+    if (currentTime !== lastVideoTimeRef.current) {
       try {
-        const time = video.currentTime * ONE_SEC_MS;
+        const time = currentTime * ONE_SEC_MS;
         processFrame(video, time);
         lastVideoTimeRef.current = video.currentTime;
       } catch (error) {

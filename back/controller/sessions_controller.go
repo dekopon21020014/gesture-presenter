@@ -34,9 +34,10 @@ func NewSession(c *gin.Context, cookieKey, redisValue string) {
 	c.SetCookie(cookieKey, newRedisKey, 3600, "/", "localhost", false, false)
 }
 
+// getSessionなんて名前にしたけど，これただのgetUserIdやわ
 func GetSession(c *gin.Context, cookieKey string) int {
 	redisKey, _ := c.Cookie(cookieKey)
-	redisValue, err := conn.Get(c, redisKey).Result()	
+	redisValue, err := conn.Get(c, redisKey).Result()
 
 	switch {
 	case err == redis.Nil:

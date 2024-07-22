@@ -22,7 +22,9 @@ func GetRouter() *gin.Engine {
 
 	router.GET("/", getTop)
 	router.GET("/verify-token", verifyToken)
-	router.POST("/api/pdf", uploadPdf)
+	router.GET("/api/pdf", getPdfs)
+	router.POST("/api/pdf", uploadPdf)	
+
 
 	loginCheckGroup := router.Group("/", checkLogin())
 	{

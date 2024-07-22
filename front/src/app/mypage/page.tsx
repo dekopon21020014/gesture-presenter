@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react';
+import { useState, useEffect } from 'react';
 
 const MyPage = () => {
     const handleLogout = async (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
@@ -27,12 +28,42 @@ const MyPage = () => {
 
     }
 
+    const [files, setFiles] = useState([]);
+    useEffect(() => {
+        console.log("@@@@@@@@@@@@@here########")
+        const fetchFiles = async () => {
+        try {
+            const response = await fetch('http://localhost:8080/api/pdf', { 
+                method: 'GET',
+                credentials: 'include', // cookieを送信するために必要
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json()
+            setFiles(data)
+
+        } catch (error) {
+            console.error('Error fetching files:', error);
+        }
+        };
+
+        fetchFiles();
+    }, []);    
+
     return (
         <div>
             <h1>My Page</h1>
             <p>This is a protected page that only authenticated users can access.</p>
             <a href="/logout" onClick={handleLogout}>logout</a>
-        </div>
+
+            <h1>Your Files</h1>
+            <ul>
+                {files.map((file, index) => (
+                <li key={index}>{file}</li>
+                ))}
+            </ul>
+        </div>        
     );
 };
 

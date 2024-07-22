@@ -23,7 +23,8 @@ export const PDFUploader: React.FC = () => {
     formData.append('pdf', file);
 
     try {
-      const response = await fetch('/api/pdf', {
+      const response = await fetch('http://localhost:8080/api/pdf', {
+        credentials: 'include', // cookieを送信するために必要
         method: 'POST',
         body: formData,
       });

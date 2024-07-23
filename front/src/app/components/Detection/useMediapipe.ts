@@ -7,7 +7,7 @@ import { Good } from "../Effects/good";
 import { Sad } from "../Effects/sad";
 import { Clap } from "../Effects/clap";
 import {Happy} from "../Effects/Happy";
-import {Nomal} from "../Effects/nomal";
+import {Sorry} from "../Effects/sorry";
 import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
 
 export const useMediaPipe = (
@@ -76,29 +76,28 @@ export const useMediaPipe = (
         } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
           prevSlide();
         } else if (gestureLabelB == 'Open_Palm') {
+          Sorry();
+          if (currentTime - lastCaptureTimeRef.current >= 3000) {
+            playSorrySound();
+            lastCaptureTimeRef.current = currentTime;
+          }
+        }
+        break;
+      case 'Thumb_Up':
+        if ((isHandAboveShoulder('right') && !isHandAboveShoulder('left')) || (!isHandAboveShoulder('right') && isHandAboveShoulder('left'))) {
+          Good();
+          if (currentTime - lastCaptureTimeRef.current >= 3000) {
+            playGoodSound();
+            lastCaptureTimeRef.current = currentTime;
+          }
+        } else if (isHandAboveShoulder('right') && isHandAboveShoulder('left')) {
           Clap();
           if (currentTime - lastCaptureTimeRef.current >= 3000) {
             playClapSound();
             lastCaptureTimeRef.current = currentTime;
           }
-          // playClapSound();
         }
         break;
-      case 'Thumb_Up':
-        Good();
-        if (currentTime - lastCaptureTimeRef.current >= 3000) {
-          playGoodSound();
-          lastCaptureTimeRef.current = currentTime;
-        }
-        // playGoodSound();
-        break;
-        case 'ILoveYou':
-          Nomal();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playSorrySound();
-            lastCaptureTimeRef.current = currentTime;
-          }
-          break; 
       case 'Victory':
         Happy();
         if (currentTime - lastCaptureTimeRef.current >= 3000) {

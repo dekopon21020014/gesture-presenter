@@ -9,7 +9,8 @@ import {
   ListItem, 
   ListItemText, 
   Paper, 
-  Box 
+  Box,
+  CircularProgress  
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FileIcon from '@mui/icons-material/InsertDriveFile';
@@ -80,14 +81,20 @@ const MyPage = () => {
                 <Typography variant="h5" component="h2" gutterBottom>
                     Your Files
                 </Typography>
-                <List>
-                    {files.map((file, index) => (
-                        <ListItem key={index}>
-                            <FileIcon sx={{ mr: 2 }} />
-                            <ListItemText primary={file} />
-                        </ListItem>
-                    ))}
-                </List>
+                {files === null ? (
+                    "You don't have uploaded yet" 
+                ) : files.length === 0 ? (
+                    <Typography>No files found.</Typography>
+                ) : (
+                    <List>
+                        {files.map((file, index) => (
+                            <ListItem key={index}>
+                                <FileIcon sx={{ mr: 2 }} />
+                                <ListItemText primary={file} />
+                            </ListItem>
+                        ))}
+                    </List>
+                )}
             </Paper>
         </Container>
     );

@@ -42,7 +42,6 @@ func uploadPdf(c *gin.Context) {
 
 	err = model.InsertPdf(file.Filename, pdfData, userId)
 	if err != nil {
-		print("begin\n")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

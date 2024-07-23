@@ -65,7 +65,8 @@ func InsertPdf(filename string, content []byte, userId int) error {
 	}
 
 	result := Db.Create(&pdf)
-	if result.Error != nil {
+	if result.Error != nil {		
+		fmt.Println(result.Error)
 		return result.Error
 	}
 	return nil

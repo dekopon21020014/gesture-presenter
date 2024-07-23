@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"net/http"	
 	"os"
+	"strconv"
+	//"fmt"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -40,6 +42,7 @@ func uploadPdf(c *gin.Context) {
 
 	err = model.InsertPdf(file.Filename, pdfData, userId)
 	if err != nil {
+		print("begin\n")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -67,15 +70,46 @@ func getPdfs(c *gin.Context) {
 	})
 }
 
-// 特定のidを持ったpdfをdbから取得して返す関数
-// 他のユーザのファイルを見ようとしていないかチェックする気候が必要
-/*
-func getPdfByUserId(c *gin.Context) 
-	userId := GetSession(c, os.Getenv("LOGIN_USER_ID_KEY"))
-	pdf := model.GetPdfByUserId(id)
-	if pdf.user_id != userId {
+func getPdfById(c *gin.Context) {
+	// クエリパラメータやURLパラメータからIDを取得する
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
-	c.JSON(http.StatusOK, pdf)
+
+	// セッションからユーザーIDを取得する
+	userId := GetSession(c, os.Getenv("LOGIN_USER_ID_KEY"))
+	if userId == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// 指定されたIDのPDFを取得する
+	pdf, err := model.GetPresentation(id)	
+	if err != nil {		
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// PDFの所有者が現在のユーザーであることを確認する
+	if pdf.UserId != userId {		
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}	
+
+	// PDFの情報をJSON形式で返す
+	// c.JSON(http.StatusOK, pdf)
+	/*
+	c.JSON(http.StatusOK, gin.H{
+		"id":       pdf.ID,
+		"filename": pdf.Filename,
+		"content":  pdf.Content,
+		"userId":   pdf.UserId,
+	})
+	*/
+	filePath := pdf.Filepath
+    // ファイルを返す
+    c.File(filePath)	
 }
-*/

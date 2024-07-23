@@ -46,12 +46,24 @@ services:
       - type: bind
         source: ./db/init
         target: /docker-entrypoint-initdb.d
-
+  
   redis:
     container_name: redis
     image: redis:latest
     ports:
       - 6379:6379
+
+  yolo:
+    container_name: yolo
+    build:
+      context: .
+      dockerfile: ./dockerfiles/yolo/Dockerfile
+    volumes:
+      - ./yolo/:/usr/src/app
+    ports:
+      - "8000:8000"
+    networks:
+      - default
 
 volumes:
   mysql-data:

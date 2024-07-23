@@ -43,7 +43,6 @@ func uploadPdf(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"message": "File uploaded successfully"})
 }
 
@@ -57,9 +56,26 @@ func getPdfs(c *gin.Context) {
 	files := model.GetPdfs(userId)
 
 	var filenames []string
+	var fileIds   []int
 	for _, file := range files {
 		filenames = append(filenames, file.Filename)
+		fileIds   = append(fileIds, file.Id)
 	}
-
-	c.JSON(http.StatusOK, filenames)
+	c.JSON(http.StatusOK, gin.H{
+		"filenames": filenames,
+		"fileIds":   fileIds,
+	})
 }
+
+// 特定のidを持ったpdfをdbから取得して返す関数
+// 他のユーザのファイルを見ようとしていないかチェックする気候が必要
+/*
+func getPdfByUserId(c *gin.Context) 
+	userId := GetSession(c, os.Getenv("LOGIN_USER_ID_KEY"))
+	pdf := model.GetPdfByUserId(id)
+	if pdf.user_id != userId {
+		return
+	}
+	c.JSON(http.StatusOK, pdf)
+}
+*/

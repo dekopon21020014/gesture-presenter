@@ -10,14 +10,17 @@ import {
   ListItemText, 
   Paper, 
   Box,
-  CircularProgress  
+  Link
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FileIcon from '@mui/icons-material/InsertDriveFile';
 
-const MyPage = () => {
-    const [files, setFiles] = useState([]);
+interface FileData {
+    filenames: string[];
+    fileIds: number[];
+}
 
+const MyPage = () => {    
     const handleLogout = async () => {
         try {
             const response = await fetch('http://localhost:8080/logout', {
@@ -38,6 +41,8 @@ const MyPage = () => {
         }
     }
 
+    //const [files, setFiles] = useState(null);
+    const [files, setFiles] = useState<FileData | null>(null);
     useEffect(() => {
         const fetchFiles = async () => {
             try {
@@ -49,14 +54,16 @@ const MyPage = () => {
                     }
                 });
                 const data = await response.json();
+                console.log(data)
                 setFiles(data);
             } catch (error) {
                 console.error('Error fetching files:', error);
+                setFiles({ filenames: [], fileIds: [] });
             }
         };
 
         fetchFiles();
-    }, []);    
+    }, []);  
 
     return (
         <Container maxWidth="md">
@@ -69,7 +76,7 @@ const MyPage = () => {
                 </Typography>
                 <Button 
                     variant="contained" 
-                    color="secondary" 
+                    color="secondary"
                     onClick={handleLogout}
                     startIcon={<LogoutIcon />}
                 >
@@ -82,15 +89,21 @@ const MyPage = () => {
                     Your Files
                 </Typography>
                 {files === null ? (
-                    "You don't have uploaded yet" 
-                ) : files.length === 0 ? (
+                    "you don't have uploaded any file yet"
+                ) : files.filenames.length === 0 ? (
                     <Typography>No files found.</Typography>
                 ) : (
                     <List>
-                        {files.map((file, index) => (
-                            <ListItem key={index}>
+                        {files.filenames.map((filename, index) => (
+                            <ListItem key={files.fileIds[index]}>
                                 <FileIcon sx={{ mr: 2 }} />
-                                <ListItemText primary={file} />
+                                <ListItemText 
+                                    primary={
+                                        <Link href={`/presentation/${files.fileIds[index]}`}>
+                                            {filename}
+                                        </Link>
+                                    } 
+                                />
                             </ListItem>
                         ))}
                     </List>

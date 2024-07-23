@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { DrawingUtils, PoseLandmarker } from "@mediapipe/tasks-vision";
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../consts/videoInfo";
 import { PoseDetectionResult } from "./type";
@@ -10,11 +10,14 @@ interface PoseCanvasProps {
   poseResult: PoseDetectionResult | null;
   videoRef: React.RefObject<HTMLVideoElement>;
   isPresenting: boolean;
+  addFacialId: (id: number | null) => void;
 }
 
-export const PoseCanvas = ({ poseResult, videoRef, isPresenting }: PoseCanvasProps) => {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+export const PoseCanvas = ({ poseResult, videoRef, isPresenting, addFacialId }: PoseCanvasProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastCaptureTimeRef = useRef(0);
+  const [facialId, setFacialId] = useState<number|null>(null);
 
   useEffect(() => {
     if (!poseResult || !canvasRef.current || !videoRef.current) return;
@@ -27,10 +30,25 @@ export const PoseCanvas = ({ poseResult, videoRef, isPresenting }: PoseCanvasPro
     canvasCtx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
     // 10秒ごとに画像を api fetch
-    const currentTime = Date.now();
-    if (currentTime - lastCaptureTimeRef.current >= 10000) {
-      postCaptureImage(canvas);
-      lastCaptureTimeRef.current = currentTime;
+    if (isPresenting) {
+      const currentTime = Date.now();
+      if (currentTime - lastCaptureTimeRef.current >= 10000) {
+
+        const handleCapture = async () => {
+          try{
+            const facial = await postCaptureImage(canvas);
+            setFacialId(facial);
+            addFacialId(facial);
+          } catch(e) {
+            console.error('Error capturing image:', e);
+            setFacialId(null);
+            addFacialId(null);
+          }
+        };
+
+        handleCapture();
+        lastCaptureTimeRef.current = currentTime;
+      }
     }
 
     poseResult.landmarks.forEach((landmarks, index) => {
@@ -44,6 +62,7 @@ export const PoseCanvas = ({ poseResult, videoRef, isPresenting }: PoseCanvasPro
 
     canvasCtx.restore();
   }, [poseResult, videoRef, isPresenting]);
+
 
   return <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />;
 };

@@ -1,28 +1,34 @@
-export const postCaptureImage = (canvas: HTMLCanvasElement) => {
+export const postCaptureImage = async (canvas: HTMLCanvasElement): Promise<number | null> => {
+  if (!canvas) {
+    return null;
+  }
 
-  const handleUpload = async () => {
-    if (canvas) {
-      const imageData = canvas.toDataURL('image/jpeg');
-      try {
-        const response = await fetch('/api/image', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ imageData }),
-        });
-        
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+  try {
+    const blob = await new Promise<Blob | null>((resolve) => 
+      canvas.toBlob((result) => resolve(result), 'image/jpeg')
+    );
 
-        const result = await response.json();
-        console.log('画像がアップロードされました:', result.fileName);
-      } catch (error) {
-        console.error('画像のアップロードに失敗しました:', error);
-      }
+    if (!blob) {
+      throw new Error('Failed to create blob from canvas');
     }
-  };
 
-  handleUpload();
-}
+    const formData = new FormData();
+    formData.append('file', blob, 'capture.jpg');
+
+    const response = await fetch('http://localhost:8000/yolo', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const result = await response.json();
+    console.log('画像がアップロードされました。表情id:', result.class_ids[0]);
+    return result.class_ids[0];
+  } catch (error) {
+    console.error('画像のアップロードに失敗しました:', error);
+    return null;
+  }
+};

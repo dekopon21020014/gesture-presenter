@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { MutableRefObject, useEffect, useRef } from "react";
 import { SwiperClass } from "swiper/react";
 
-export const useSlideNavigation = () => {
-  const swiperInstanceRef = useRef<SwiperClass | null>(null);
+export const useSlideNavigation = (swiperInstanceRef: MutableRefObject<SwiperClass | null>) => {
+  
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!swiperInstanceRef.current) return;
@@ -17,7 +18,7 @@ export const useSlideNavigation = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);  
+  }, []);
 
   const nextSlide = () => {
     swiperInstanceRef.current!.slideNext();

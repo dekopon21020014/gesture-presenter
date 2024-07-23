@@ -1,6 +1,6 @@
 'use client';
 import { Navigation, Pagination } from 'swiper/modules';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import { Mediapipe } from '../../components/Detection/Mediapipe';
 import { Effects } from '../../components/Effects/Effects';
 import { Sounds } from '../../components/Sounds/Sounds';
@@ -9,7 +9,7 @@ import 'pdfjs-dist/build/pdf.worker.min.mjs';
 import { usePdfSlider } from '../usePdfSlider';
 import { useSlideNavigation } from '../useSlideNavigation';
 import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -31,8 +31,9 @@ const slideSettings = {
 const BasicSlider: React.FC = () => {
   const params = useParams();
   const pdfid = params.id as string;
+  const swiperInstanceRef = useRef<SwiperClass | null>(null);
   
-  const { swiperInstanceRef, prevSlide, nextSlide } = useSlideNavigation();
+  const { prevSlide, nextSlide } = useSlideNavigation(swiperInstanceRef);
   const [ images ] = usePdfSlider(swiperInstanceRef, pdfid);
   useEffect(() => {
     if (swiperInstanceRef.current && images.length > 0) {

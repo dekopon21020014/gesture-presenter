@@ -6,7 +6,9 @@ import { PoseIndex } from "@/app/consts/landmarkIndex";
 import { Good } from "../Effects/good";
 import { Sad } from "../Effects/sad";
 import { Clap } from "../Effects/clap";
-import { playBadSound, playClapSound, playGoodSound } from "../Sounds/Sounds";
+import {Happy} from "../Effects/Happy";
+import {Nomal} from "../Effects/nomal";
+import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -22,7 +24,7 @@ export const useMediaPipe = (
   const lastVideoTimeRef = useRef(-1);
   const lastPostTimeRef = useRef(0);
   const isRenderLoopRunning = useRef(false);
-
+  const lastCaptureTimeRef = useRef(0);
 
   const initializeTasks = useCallback(async () => {
     try {
@@ -65,6 +67,8 @@ export const useMediaPipe = (
       landmark[eye.outer.right].x - landmark[wrist.right].x < 0.2 &&
       landmark[wrist.left].x - landmark[eye.outer.left].x < 0.2;
 
+    const currentTime = Date.now();
+
     switch(gestureLabelA) {
       case 'Open_Palm':
         if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
@@ -73,17 +77,43 @@ export const useMediaPipe = (
           prevSlide();
         } else if (gestureLabelB == 'Open_Palm') {
           Clap();
-          playClapSound();
+          if (currentTime - lastCaptureTimeRef.current >= 3000) {
+            playClapSound();
+            lastCaptureTimeRef.current = currentTime;
+          }
+          // playClapSound();
         }
         break;
       case 'Thumb_Up':
         Good();
-        playGoodSound();
+        if (currentTime - lastCaptureTimeRef.current >= 3000) {
+          playGoodSound();
+          lastCaptureTimeRef.current = currentTime;
+        }
+        // playGoodSound();
         break;
+        case 'ILoveYou':
+          Nomal();
+          if (currentTime - lastCaptureTimeRef.current >= 3000) {
+            playSorrySound();
+            lastCaptureTimeRef.current = currentTime;
+          }
+          break; 
+      case 'Victory':
+        Happy();
+        if (currentTime - lastCaptureTimeRef.current >= 3000) {
+          playHappySound();
+          lastCaptureTimeRef.current = currentTime;
+        }
+        break;     
       default:
         if (isHandBelowEyes() && areHandsCloseToEyes()) {
           Sad();
-          playBadSound();
+          if (currentTime - lastCaptureTimeRef.current >= 3000) {
+            playBadSound();
+            lastCaptureTimeRef.current = currentTime;
+          }
+          // playBadSound();
         }
         break;
     }

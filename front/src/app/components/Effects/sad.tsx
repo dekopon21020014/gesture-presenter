@@ -1,6 +1,6 @@
 export const Sad = async () => {
     const img = document.createElement('img');
-    img.src = '/EffectsRoom/sad.jpg';
+    img.src = '/EffectsRoom/sad.png';
     img.style.position = 'fixed';
     img.style.right = '0%';
     img.style.bottom = '0%';

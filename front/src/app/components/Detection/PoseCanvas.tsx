@@ -9,9 +9,10 @@ import { postCaptureImage } from "../Media/imageSender";
 interface PoseCanvasProps {
   poseResult: PoseDetectionResult | null;
   videoRef: React.RefObject<HTMLVideoElement>;
+  isPresenting: boolean;
 }
 
-export const PoseCanvas = ({ poseResult, videoRef }: PoseCanvasProps) => {
+export const PoseCanvas = ({ poseResult, videoRef, isPresenting }: PoseCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const lastCaptureTimeRef = useRef(0);
 
@@ -33,7 +34,7 @@ export const PoseCanvas = ({ poseResult, videoRef }: PoseCanvasProps) => {
     }
 
     poseResult.landmarks.forEach((landmarks, index) => {
-      const colorString = index === 0 ? "red" : "blue";
+      const colorString = isPresenting ? "red" : "blue";
       drawingUtils.drawLandmarks(landmarks, {
         radius: (data) => DrawingUtils.lerp(data.from!.z, -0.15, 0.1, 5, 1),
         color: colorString,
@@ -42,7 +43,7 @@ export const PoseCanvas = ({ poseResult, videoRef }: PoseCanvasProps) => {
     });
 
     canvasCtx.restore();
-  }, [poseResult, videoRef]);
+  }, [poseResult, videoRef, isPresenting]);
 
   return <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />;
 };

@@ -22,9 +22,11 @@ export const useMediaPipe = (
   const [isModelReady, setIsModelReady] = useState(false);
   const [poseResult, setPoseResult] = useState<PoseLandmarkerResult | null>(null);
   const [gestureResult, setGestureResult] = useState<GestureRecognizerResult | null>(null);
+  const [isPresenting, setIsPresenting] = useState<boolean>(false);
   const isRenderLoopRunning = useRef(false);
   const lastVideoTimeRef = useRef(-1);
-  const lastCaptureTimeRef = useRef(0);
+  const lastSoundTimeRef = useRef(0);
+  const startCount = useRef(0);
   const shutdownCount = useRef(0);
   const router = useRouter();
 
@@ -39,7 +41,6 @@ export const useMediaPipe = (
   }, []);
 
   const processFrame = useCallback((video:HTMLVideoElement, time:number) => {
-    // if (!streamReady) return;
     const resultPose = poseLandmarkerRef.current!.detectForVideo(video, time);
     const resultGesture = gestureRecognizerRef.current!.recognizeForVideo(video, time);
 
@@ -72,61 +73,73 @@ export const useMediaPipe = (
 
     const currentTime = Date.now();
 
-    switch(gestureLabelA) {
-      case 'Open_Palm':
-        if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
-          nextSlide();
-        } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
-          prevSlide();
-        } else if (gestureLabelB == 'Open_Palm') {
-          Sorry();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playSorrySound();
-            lastCaptureTimeRef.current = currentTime;
+    if (gestureLabelA === 'Closed_Fist') {
+      if (startCount.current > 5) {
+        setIsPresenting(true);
+        startCount.current = 0;
+      } else {
+        startCount.current++;
+      }
+    }
+    if (isPresenting) {
+      switch(gestureLabelA) {
+        case 'Open_Palm':
+          if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
+            nextSlide();
+          } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
+            prevSlide();
+          } else if (gestureLabelB == 'Open_Palm') {
+            Sorry();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playSorrySound();
+              lastSoundTimeRef.current = currentTime;
+            }
           }
-        }
-        break;
-      case 'Thumb_Up':
-        if ((isHandAboveShoulder('right') && !isHandAboveShoulder('left')) || (!isHandAboveShoulder('right') && isHandAboveShoulder('left'))) {
-          Good();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playGoodSound();
-            lastCaptureTimeRef.current = currentTime;
+          break;
+        case 'Thumb_Up':
+          if ((isHandAboveShoulder('right') && !isHandAboveShoulder('left')) || (!isHandAboveShoulder('right') && isHandAboveShoulder('left'))) {
+            Good();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playGoodSound();
+              lastSoundTimeRef.current = currentTime;
+            }
+          } else if (isHandAboveShoulder('right') && isHandAboveShoulder('left')) {
+            Clap();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playClapSound();
+              lastSoundTimeRef.current = currentTime;
+            }
           }
-        } else if (isHandAboveShoulder('right') && isHandAboveShoulder('left')) {
-          Clap();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playClapSound();
-            lastCaptureTimeRef.current = currentTime;
+          break;
+        case 'Victory':
+          Happy();
+          if (currentTime - lastSoundTimeRef.current >= 3000) {
+            playHappySound();
+            lastSoundTimeRef.current = currentTime;
           }
-        }
-        break;
-      case 'Victory':
-        Happy();
-        if (currentTime - lastCaptureTimeRef.current >= 3000) {
-          playHappySound();
-          lastCaptureTimeRef.current = currentTime;
-        }
-        break;
-      case 'ILoveYou':
-        if (shutdownCount.current > 5) {
-          shutdownCount.current = 0;
-          router.push('/mypage');
-        }
-        shutdownCount.current++;
-        break;
-      default:
-        if (isHandBelowEyes() && areHandsCloseToEyes()) {
-          Sad();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playBadSound();
-            lastCaptureTimeRef.current = currentTime;
+          break;
+        case 'ILoveYou':
+          if (shutdownCount.current > 5) {
+            setIsPresenting(false);
+            shutdownCount.current = 0;
+            router.push('/mypage');
+          } else {
+            shutdownCount.current++;
           }
-        }
-        break;
+          break;
+        default:
+          if (isHandBelowEyes() && areHandsCloseToEyes()) {
+            Sad();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playBadSound();
+              lastSoundTimeRef.current = currentTime;
+            }
+          }
+          break;
+      }
     }
     
-  }, [nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
+  }, [isPresenting, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;
@@ -176,5 +189,5 @@ export const useMediaPipe = (
     };
   }, [isModelReady, videoRef, renderLoop]);
 
-  return { poseResult, isModelReady };
+  return { poseResult, gestureResult, isModelReady, isPresenting };
 };

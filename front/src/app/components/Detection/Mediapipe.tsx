@@ -12,7 +12,7 @@ interface MediapipeProps {
 export const Mediapipe = ({ nextSlide, prevSlide }: MediapipeProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { streamReady } = useStream(videoRef, CAMERA_WIDTH, CAMERA_HEIGHT);
-  const { poseResult, isModelReady } = useMediaPipe(videoRef, streamReady, nextSlide, prevSlide);
+  const { poseResult, isPresenting } = useMediaPipe(videoRef, streamReady, nextSlide, prevSlide);
   
   return(
     <div>
@@ -24,7 +24,8 @@ export const Mediapipe = ({ nextSlide, prevSlide }: MediapipeProps) => {
         height={CANVAS_HEIGHT}
         style={{ display: "none" }}
       />
-      <PoseCanvas poseResult={poseResult ?? null} videoRef={videoRef} />
+      <PoseCanvas poseResult={poseResult ?? null} videoRef={videoRef} isPresenting={isPresenting} />
+      {isPresenting ? <p>presen now</p>:<p>not presenting</p>}
     </div>
   )
 }

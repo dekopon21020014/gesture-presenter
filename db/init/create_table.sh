@@ -11,6 +11,6 @@ $CMD_MYSQL -e "create table users (
 $CMD_MYSQL -e "CREATE TABLE pdfs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     filename VARCHAR(255) NOT NULL,
-    content LONGBLOB NOT NULL,
+    filepath CHAR(255) NOT NULL,
     user_id int NOT NULL
 );"

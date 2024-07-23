@@ -29,7 +29,8 @@ func GetRouter() *gin.Engine {
 	loginCheckGroup := router.Group("/", checkLogin())
 	{
 		loginCheckGroup.GET("/mypage", getMypage)
-		loginCheckGroup.GET("/logout", getLogout)		
+		loginCheckGroup.GET("/logout", getLogout)
+		loginCheckGroup.GET("/api/pdf/:id", getPdfById)
 	}
 	logoutCheckGroup := router.Group("/", checkLogout())
 	{

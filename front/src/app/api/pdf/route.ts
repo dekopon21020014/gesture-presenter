@@ -18,7 +18,7 @@ async function getFileList() {
 // 1. 特定のPDFファイルの取得: /api/pdf?filename=example.pdf
 // 2. PDFファイル一覧の取得: /api/pdf?list=true
 export async function GET(request: NextRequest) {
-  const filename = request.nextUrl.searchParams.get('filename');
+  const fileid = request.nextUrl.searchParams.get('fileid');
   const listFiles = request.nextUrl.searchParams.get('list');
 
   if (listFiles === 'true') {
@@ -26,20 +26,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ files: fileList });
   }
   
-  if (!filename) {
+  if (!fileid) {
     return NextResponse.json({ error: 'Filename is required' }, { status: 400 });
   }
 
-  const filePath = path.join(process.cwd(), 'uploads', filename);
-
   try {
-    const fileBuffer = await fs.promises.readFile(filePath);
+    console.log(fileid);
+    const response = await fetch(`http://localhost:8080/api/pdf/${fileid}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+          'Content-Type': 'application/json',
+      }
+    });
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    const blob = await response.blob();
     
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(blob, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${filename}"`,
+        'Content-Disposition': `inline; filename="${fileid}"`,
       },
     });
   } catch (error) {

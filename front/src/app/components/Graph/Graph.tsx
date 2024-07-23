@@ -13,11 +13,15 @@ const classNames: { [key: number]: string } = {
   7: "Surprise驚き",
 };
 
-// X軸のラベル（10秒ごと）
-const timeLabels: string[] = Array.from({ length: 10 }, (_, i) => `${i * 10}s`);
-
 // Y軸のデータ
 const emotionData: number[] = [0, 1, 4, 2, 3, 4, 5, 6, 7, 4]; // 例としてランダムなクラスIDを使用
+
+
+// X軸のラベル（10秒ごと）
+const timeLabels: string[] = Array.from({ length: emotionData.length }, (_, i) => `${i * 10}s`);
+
+
+
 
 const data = {
   labels: timeLabels,

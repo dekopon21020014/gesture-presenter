@@ -6,9 +6,10 @@ import { PoseIndex } from "@/app/consts/landmarkIndex";
 import { Good } from "../Effects/good";
 import { Sad } from "../Effects/sad";
 import { Clap } from "../Effects/clap";
-import {Happy} from "../Effects/Happy";
-import {Sorry} from "../Effects/sorry";
+import { Happy } from "../Effects/Happy";
+import { Sorry } from "../Effects/sorry";
 import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
+import { useRouter } from "next/navigation";
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -18,26 +19,27 @@ export const useMediaPipe = (
 ) => {
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const gestureRecognizerRef = useRef<GestureRecognizer | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [isModelReady, setIsModelReady] = useState(false);
   const [poseResult, setPoseResult] = useState<PoseLandmarkerResult | null>(null);
   const [gestureResult, setGestureResult] = useState<GestureRecognizerResult | null>(null);
-  const lastVideoTimeRef = useRef(-1);
-  const lastPostTimeRef = useRef(0);
   const isRenderLoopRunning = useRef(false);
+  const lastVideoTimeRef = useRef(-1);
   const lastCaptureTimeRef = useRef(0);
+  const shutdownCount = useRef(0);
+  const router = useRouter();
 
   const initializeTasks = useCallback(async () => {
     try {
       poseLandmarkerRef.current = await setupPoseLandmarker();
       gestureRecognizerRef.current = await setupGestureRecognizer();
-      setIsReady(true);
+      setIsModelReady(true);
     } catch (error) {
       console.error("Failed to initialize MediaPipe tasks:", error);
     }
   }, []);
 
   const processFrame = useCallback((video:HTMLVideoElement, time:number) => {
-    if (!streamReady) return;
+    // if (!streamReady) return;
     const resultPose = poseLandmarkerRef.current!.detectForVideo(video, time);
     const resultGesture = gestureRecognizerRef.current!.recognizeForVideo(video, time);
 
@@ -105,7 +107,14 @@ export const useMediaPipe = (
           playHappySound();
           lastCaptureTimeRef.current = currentTime;
         }
-        break;     
+        break;
+      case 'ILoveYou':
+        if (shutdownCount.current > 5) {
+          shutdownCount.current = 0;
+          router.push('/mypage');
+        }
+        shutdownCount.current++;
+        break;
       default:
         if (isHandBelowEyes() && areHandsCloseToEyes()) {
           Sad();
@@ -117,11 +126,11 @@ export const useMediaPipe = (
         break;
     }
     
-  }, [streamReady, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
+  }, [nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !isReady) return;
+    if (!video || !isModelReady || !streamReady) return;
     const currentTime = video.currentTime;
     if (currentTime !== lastVideoTimeRef.current) {
       try {
@@ -133,7 +142,7 @@ export const useMediaPipe = (
       }
     }
     setTimeout(renderLoop, (1 / FRAME_RATE) * ONE_SEC_MS);
-  }, [isReady, videoRef, processFrame]);
+  }, [streamReady, isModelReady, videoRef, processFrame]);
 
   const startRenderLoop = useCallback(() => {
     if (!isRenderLoopRunning.current) {
@@ -154,7 +163,7 @@ export const useMediaPipe = (
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isReady) return;
+    if (!video || !isModelReady) return;
 
     video.addEventListener("canplay", startRenderLoop);
     if (video.readyState >= 2) {
@@ -165,7 +174,7 @@ export const useMediaPipe = (
       video.removeEventListener("canplay", renderLoop);
       isRenderLoopRunning.current = false;
     };
-  }, [isReady, videoRef, renderLoop]);
+  }, [isModelReady, videoRef, renderLoop]);
 
-  return { poseResult, isReady };
+  return { poseResult, isModelReady };
 };

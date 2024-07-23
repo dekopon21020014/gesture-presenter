@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import * as pdfjsLib from 'pdfjs-dist';
 import { SwiperClass } from "swiper/react";
 
+// PDFファイルの取得（一覧、1件）
+// 1. 特定のPDFファイルの取得: /api/pdf?filename=example.pdf
+// 2. PDFファイル一覧の取得: /api/pdf?list=true
+
 export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClass | null>) => {
   const [images, setImages] = useState<string[]>([]);
 
@@ -32,9 +36,7 @@ export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClas
   }
 
   useEffect(() => {
-    // PDFファイルのパス指定
-    // 1. 特定のPDFファイルの取得: /api/pdf?filename=example.pdf
-    // 2. PDFファイル一覧の取得: /api/pdf?list=true
+
     fetchFileList();
 
     const loadPdf = async () => {

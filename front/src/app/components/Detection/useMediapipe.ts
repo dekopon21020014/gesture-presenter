@@ -12,13 +12,13 @@ import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySo
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
+  streamReady: boolean,
   nextSlide: () => void,
   prevSlide: () => void
 ) => {
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const gestureRecognizerRef = useRef<GestureRecognizer | null>(null);
   const [isReady, setIsReady] = useState(false);
-  // const [isPostImageTime, setIsPostImageTime] = useState(false);
   const [poseResult, setPoseResult] = useState<PoseLandmarkerResult | null>(null);
   const [gestureResult, setGestureResult] = useState<GestureRecognizerResult | null>(null);
   const lastVideoTimeRef = useRef(-1);
@@ -37,6 +37,7 @@ export const useMediaPipe = (
   }, []);
 
   const processFrame = useCallback((video:HTMLVideoElement, time:number) => {
+    if (!streamReady) return;
     const resultPose = poseLandmarkerRef.current!.detectForVideo(video, time);
     const resultGesture = gestureRecognizerRef.current!.recognizeForVideo(video, time);
 
@@ -112,12 +113,11 @@ export const useMediaPipe = (
             playBadSound();
             lastCaptureTimeRef.current = currentTime;
           }
-          // playBadSound();
         }
         break;
     }
     
-  }, [nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
+  }, [streamReady, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;

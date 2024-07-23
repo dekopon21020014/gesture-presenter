@@ -1,17 +1,13 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Swiper as SwiperClass } from 'swiper/types';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 import { Mediapipe } from '../components/Detection/Mediapipe';
 import { Effects } from '../components/Effects/Effects';
 import { Sounds } from '../components/Sounds/Sounds';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
 import { usePdfSlider } from './usePdfSlider';
+import { useSlideNavigation } from './useSlideNavigation';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -27,34 +23,8 @@ const slideSettings = {
 };
 
 const BasicSlider: React.FC = () => {
-  const swiperInstanceRef = useRef<SwiperClass | null>(null);
+  const { swiperInstanceRef, prevSlide, nextSlide } = useSlideNavigation();
   const [ images ] = usePdfSlider(swiperInstanceRef);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!swiperInstanceRef.current) return;
-
-      if (event.key === 'ArrowRight') {
-        swiperInstanceRef.current.slideNext();
-      } else if (event.key === 'ArrowLeft') {
-        swiperInstanceRef.current.slidePrev();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);  
-
-  const nextSlide = () => {
-    swiperInstanceRef.current!.slideNext();
-  };
-
-  const prevSlide = () => {
-    swiperInstanceRef.current!.slidePrev();
-  };
 
   return (
     <div>

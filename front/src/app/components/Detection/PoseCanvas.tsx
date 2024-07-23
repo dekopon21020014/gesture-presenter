@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { DrawingUtils, NormalizedLandmark, PoseLandmarker } from "@mediapipe/tasks-vision";
-// import { PoseDetectionResult } from "./types";
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from "./constants";
+import React, { useEffect, useRef } from "react";
+import { DrawingUtils, PoseLandmarker } from "@mediapipe/tasks-vision";
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from "../../consts/videoInfo";
 import { PoseDetectionResult } from "./type";
+import { postCaptureImage } from "../Media/imageSender";
 
 interface PoseCanvasProps {
   poseResult: PoseDetectionResult | null;
@@ -13,17 +13,24 @@ interface PoseCanvasProps {
 
 export const PoseCanvas = ({ poseResult, videoRef }: PoseCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const lastCaptureTimeRef = useRef(0);
 
   useEffect(() => {
-    // console.log(poseResult, canvasRef, videoRef);
     if (!poseResult || !canvasRef.current || !videoRef.current) return;
-
-    const canvasCtx = canvasRef.current.getContext("2d")!;
+    const canvas = canvasRef.current;
+    const canvasCtx = canvas.getContext("2d")!;
     const drawingUtils = new DrawingUtils(canvasCtx);
 
     canvasCtx.save();
-    canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    canvasCtx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    canvasCtx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+    // 10秒ごとに画像を api fetch
+    const currentTime = Date.now();
+    if (currentTime - lastCaptureTimeRef.current >= 10000) {
+      postCaptureImage(canvas);
+      lastCaptureTimeRef.current = currentTime;
+    }
 
     poseResult.landmarks.forEach((landmarks, index) => {
       const colorString = index === 0 ? "red" : "blue";

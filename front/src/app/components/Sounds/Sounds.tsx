@@ -1,5 +1,11 @@
 import React, { useEffect } from "react";
 
+export const playClapSound = () => playSound('/SoundsRoom/whoo.mp3');
+export const playGoodSound = () => playSound('/SoundsRoom/dodon.mp3');
+export const playBadSound = () => playSound('/SoundsRoom/usodaro.mp3');
+export const playHappySound = () => playSound('/SoundsRoom/ufufufun.mp3');
+export const playSorrySound = () => playSound('/SoundsRoom/sorry.m4a');
+
 const playSound = (soundFile: string) => {
     if (typeof window !== 'undefined') {
         const audio = new Audio(soundFile);

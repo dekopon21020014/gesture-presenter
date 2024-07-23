@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef } from "react"
 import { useMediaPipe } from "./useMediapipe";
 import { PoseCanvas } from "./PoseCanvas";
-import { CAMERA_HEIGHT, CAMERA_WIDTH, CANVAS_HEIGHT, CANVAS_WIDTH } from "./constants";
-import { useStream } from "./useStream";
+import { CAMERA_HEIGHT, CAMERA_WIDTH, CANVAS_HEIGHT, CANVAS_WIDTH } from "../../consts/videoInfo";
+import { useStream } from "../Media/useStream";
 
 interface MediapipeProps {
   nextSlide: () => void;
@@ -12,7 +12,7 @@ interface MediapipeProps {
 export const Mediapipe = ({ nextSlide, prevSlide }: MediapipeProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { poseResult, isReady } = useMediaPipe(videoRef, nextSlide, prevSlide);
-  useStream(videoRef, CAMERA_WIDTH, CAMERA_HEIGHT);
+  const { streamReady } = useStream(videoRef, CAMERA_WIDTH, CAMERA_HEIGHT);
   
   return(
     <div>

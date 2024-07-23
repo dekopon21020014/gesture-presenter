@@ -1,6 +1,6 @@
-export const Happy = async () => {
+export const Sorry = async () => {
     const img = document.createElement('img');
-    img.src = '/EffectsRoom/happy.png';
+    img.src = '/EffectsRoom/sorry.png';
     img.style.position = 'fixed';
     img.style.right = '0%';
     img.style.bottom = '0%';

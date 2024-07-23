@@ -1,20 +1,21 @@
-"use client"
+'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, ChangeEvent, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
-  Container, 
-  Typography, 
   Button, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  Paper, 
   Box,
+  Typography,
+  Container,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
   Link
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
-import FileIcon from '@mui/icons-material/InsertDriveFile';
 import HomeIcon from '@mui/icons-material/Home';
+import FileIcon from '@mui/icons-material/InsertDriveFile';
 import PDFUploader from '../components/Form/FileUpForm';
 
 interface FileData {
@@ -23,7 +24,9 @@ interface FileData {
 }
 
 const MyPage = () => {    
-    const handleLogout = async () => {
+    const router = useRouter();
+
+    const handleLogout = async (redirectUrl: string) => {
         try {
             const response = await fetch('http://localhost:8080/logout', {
                 method: 'GET',
@@ -33,7 +36,7 @@ const MyPage = () => {
                 }
             });
             if (response.ok) {
-                window.location.href = '/login';
+                window.location.href = redirectUrl;
                 console.log('Logout successful');
             } else {
                 console.error('Logout failed');
@@ -41,7 +44,10 @@ const MyPage = () => {
         } catch (error) {
             console.error('Error during logout:', error);
         }
-    }
+    };
+
+    const handleLogoutClick = () => handleLogout('/login');
+    const handleHomeClick = () => handleLogout('/top');
 
     const [files, setFiles] = useState<FileData | null>(null);
 
@@ -70,7 +76,7 @@ const MyPage = () => {
     return (
         <Container maxWidth="md">
           <Box component="main" sx={{ my: 4, textAlign: 'center' }}>
-            <Typography variant="h4" component="h1" gutterBottom>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
               My Page
             </Typography>
             <Typography variant="body1" paragraph>
@@ -87,32 +93,32 @@ const MyPage = () => {
               Your Files
             </Typography>
             {files === null || files.filenames == null ? (
-              <Typography aria-live="polite">You don't have uploaded any file yet.</Typography>
+                <Typography aria-live="polite">You don't have uploaded any file yet.</Typography>
             ) : files.filenames.length === 0 ? (
-              <Typography>No files found.</Typography>
+                <Typography>No files found.</Typography>
             ) : (
-              <List>
-                {files.filenames.map((filename, index) => (
-                  <ListItem key={files.fileIds[index]}>
-                    <FileIcon sx={{ mr: 2 }} />
-                    <ListItemText
-                      primary={
-                        <Link href={`/presentation/${files.fileIds[index]}`} underline="hover">
-                          {filename}
-                        </Link>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
+                <List>
+                    {files.filenames.map((filename, index) => (
+                        <ListItem key={files.fileIds[index]}>
+                            <FileIcon sx={{ mr: 2 }} />
+                            <ListItemText
+                                primary={
+                                    <Link href={`/presentation/${files.fileIds[index]}`} underline="hover">
+                                        {filename}
+                                    </Link>
+                                }
+                            />
+                        </ListItem>
+                    ))}
+                </List>
             )}
           </Paper>
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 8, mt: 10, mb: 10 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4, mb: 4 }}>
             <Button
                 variant="contained"
                 color="primary"
-                href="/"
+                onClick={handleHomeClick}
                 startIcon={<HomeIcon />}
                 aria-label="Home"
                 sx={{ minWidth: 200, height: 60 }}
@@ -122,7 +128,7 @@ const MyPage = () => {
             <Button
                 variant="contained"
                 color="secondary"
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 startIcon={<LogoutIcon />}
                 aria-label="Logout"
                 sx={{ minWidth: 200, height: 60 }}
@@ -130,7 +136,6 @@ const MyPage = () => {
                 Logout
             </Button>
           </Box>
-
         </Container>
       );
 };

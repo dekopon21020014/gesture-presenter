@@ -61,13 +61,22 @@ const MyPage = () => {
                 }
             });
             const data = await response.json();
-            console.log(data);
             setFiles(data);
         } catch (error) {
             console.error('Error fetching files:', error);
             setFiles({ filenames: [], fileIds: [] });
         }
     }, []);
+
+    useEffect(() => {
+        const storedFacialIds = localStorage.getItem('facialIds');
+        if (storedFacialIds) {
+          const parsedFacialIds = JSON.parse(storedFacialIds);
+          console.log(parsedFacialIds);
+          // parsedFacialIdsを使用して何かする
+          localStorage.removeItem('facialIds'); // 使用後は削除
+        }
+      }, []);
 
     useEffect(() => {
         fetchFiles();

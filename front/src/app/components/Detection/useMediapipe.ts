@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
   streamReady: boolean,
+  facialIds: number[],
   nextSlide: () => void,
   prevSlide: () => void
 ) => {
@@ -122,6 +123,7 @@ export const useMediaPipe = (
           if (shutdownCount.current > 5) {
             setIsPresenting(false);
             shutdownCount.current = 0;
+            localStorage.setItem('facialIds', JSON.stringify(facialIds));
             router.push('/mypage');
           } else {
             shutdownCount.current++;

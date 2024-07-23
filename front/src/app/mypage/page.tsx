@@ -88,7 +88,7 @@ const MyPage = () => {
                 <Typography variant="h5" component="h2" gutterBottom>
                     Your Files
                 </Typography>
-                {files === null ? (
+                {files === null || files.filenames == null ? (
                     "you don't have uploaded any file yet"
                 ) : files.filenames.length === 0 ? (
                     <Typography>No files found.</Typography>

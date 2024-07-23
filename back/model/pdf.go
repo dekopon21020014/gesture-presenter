@@ -6,6 +6,7 @@ import (
 
 type PDF struct {
 	gorm.Model
+	Id       int
 	Filename string `gorm:"not null"`
 	Content  []byte `gorm:"not null"`
 	UserId   int    `gorm:"not null"`
@@ -28,6 +29,6 @@ func InsertPdf(filename string, content []byte, userId int) error {
 
 func GetPdfs(userId int) []PDF {
 	var files []PDF
-	Db.Where("user_id = ?", userId).Select("filename").Find(&files)
+	Db.Where("user_id = ?", userId).Select("id", "filename").Find(&files)
 	return files
 }

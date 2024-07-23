@@ -6,31 +6,35 @@ import { PoseIndex } from "@/app/consts/landmarkIndex";
 import { Good } from "../Effects/good";
 import { Sad } from "../Effects/sad";
 import { Clap } from "../Effects/clap";
-import {Happy} from "../Effects/Happy";
-import {Sorry} from "../Effects/sorry";
+import { Happy } from "../Effects/Happy";
+import { Sorry } from "../Effects/sorry";
 import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
+import { useRouter } from "next/navigation";
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
+  streamReady: boolean,
   nextSlide: () => void,
   prevSlide: () => void
 ) => {
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const gestureRecognizerRef = useRef<GestureRecognizer | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  // const [isPostImageTime, setIsPostImageTime] = useState(false);
+  const [isModelReady, setIsModelReady] = useState(false);
   const [poseResult, setPoseResult] = useState<PoseLandmarkerResult | null>(null);
   const [gestureResult, setGestureResult] = useState<GestureRecognizerResult | null>(null);
-  const lastVideoTimeRef = useRef(-1);
-  const lastPostTimeRef = useRef(0);
+  const [isPresenting, setIsPresenting] = useState<boolean>(false);
   const isRenderLoopRunning = useRef(false);
-  const lastCaptureTimeRef = useRef(0);
+  const lastVideoTimeRef = useRef(-1);
+  const lastSoundTimeRef = useRef(0);
+  const startCount = useRef(0);
+  const shutdownCount = useRef(0);
+  const router = useRouter();
 
   const initializeTasks = useCallback(async () => {
     try {
       poseLandmarkerRef.current = await setupPoseLandmarker();
       gestureRecognizerRef.current = await setupGestureRecognizer();
-      setIsReady(true);
+      setIsModelReady(true);
     } catch (error) {
       console.error("Failed to initialize MediaPipe tasks:", error);
     }
@@ -69,59 +73,77 @@ export const useMediaPipe = (
 
     const currentTime = Date.now();
 
-    switch(gestureLabelA) {
-      case 'Open_Palm':
-        if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
-          nextSlide();
-        } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
-          prevSlide();
-        } else if (gestureLabelB == 'Open_Palm') {
-          Sorry();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playSorrySound();
-            lastCaptureTimeRef.current = currentTime;
+    if (gestureLabelA === 'Closed_Fist') {
+      if (startCount.current > 5) {
+        setIsPresenting(true);
+        startCount.current = 0;
+      } else {
+        startCount.current++;
+      }
+    }
+    if (isPresenting) {
+      switch(gestureLabelA) {
+        case 'Open_Palm':
+          if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
+            nextSlide();
+          } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
+            prevSlide();
+          } else if (gestureLabelB == 'Open_Palm') {
+            Sorry();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playSorrySound();
+              lastSoundTimeRef.current = currentTime;
+            }
           }
-        }
-        break;
-      case 'Thumb_Up':
-        if ((isHandAboveShoulder('right') && !isHandAboveShoulder('left')) || (!isHandAboveShoulder('right') && isHandAboveShoulder('left'))) {
-          Good();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playGoodSound();
-            lastCaptureTimeRef.current = currentTime;
+          break;
+        case 'Thumb_Up':
+          if ((isHandAboveShoulder('right') && !isHandAboveShoulder('left')) || (!isHandAboveShoulder('right') && isHandAboveShoulder('left'))) {
+            Good();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playGoodSound();
+              lastSoundTimeRef.current = currentTime;
+            }
+          } else if (isHandAboveShoulder('right') && isHandAboveShoulder('left')) {
+            Clap();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playClapSound();
+              lastSoundTimeRef.current = currentTime;
+            }
           }
-        } else if (isHandAboveShoulder('right') && isHandAboveShoulder('left')) {
-          Clap();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playClapSound();
-            lastCaptureTimeRef.current = currentTime;
+          break;
+        case 'Victory':
+          Happy();
+          if (currentTime - lastSoundTimeRef.current >= 3000) {
+            playHappySound();
+            lastSoundTimeRef.current = currentTime;
           }
-        }
-        break;
-      case 'Victory':
-        Happy();
-        if (currentTime - lastCaptureTimeRef.current >= 3000) {
-          playHappySound();
-          lastCaptureTimeRef.current = currentTime;
-        }
-        break;     
-      default:
-        if (isHandBelowEyes() && areHandsCloseToEyes()) {
-          Sad();
-          if (currentTime - lastCaptureTimeRef.current >= 3000) {
-            playBadSound();
-            lastCaptureTimeRef.current = currentTime;
+          break;
+        case 'ILoveYou':
+          if (shutdownCount.current > 5) {
+            setIsPresenting(false);
+            shutdownCount.current = 0;
+            router.push('/mypage');
+          } else {
+            shutdownCount.current++;
           }
-          // playBadSound();
-        }
-        break;
+          break;
+        default:
+          if (isHandBelowEyes() && areHandsCloseToEyes()) {
+            Sad();
+            if (currentTime - lastSoundTimeRef.current >= 3000) {
+              playBadSound();
+              lastSoundTimeRef.current = currentTime;
+            }
+          }
+          break;
+      }
     }
     
-  }, [nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
+  }, [isPresenting, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !isReady) return;
+    if (!video || !isModelReady || !streamReady) return;
     const currentTime = video.currentTime;
     if (currentTime !== lastVideoTimeRef.current) {
       try {
@@ -133,7 +155,7 @@ export const useMediaPipe = (
       }
     }
     setTimeout(renderLoop, (1 / FRAME_RATE) * ONE_SEC_MS);
-  }, [isReady, videoRef, processFrame]);
+  }, [streamReady, isModelReady, videoRef, processFrame]);
 
   const startRenderLoop = useCallback(() => {
     if (!isRenderLoopRunning.current) {
@@ -154,7 +176,7 @@ export const useMediaPipe = (
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isReady) return;
+    if (!video || !isModelReady) return;
 
     video.addEventListener("canplay", startRenderLoop);
     if (video.readyState >= 2) {
@@ -165,7 +187,7 @@ export const useMediaPipe = (
       video.removeEventListener("canplay", renderLoop);
       isRenderLoopRunning.current = false;
     };
-  }, [isReady, videoRef, renderLoop]);
+  }, [isModelReady, videoRef, renderLoop]);
 
-  return { poseResult, isReady };
+  return { poseResult, gestureResult, isModelReady, isPresenting };
 };

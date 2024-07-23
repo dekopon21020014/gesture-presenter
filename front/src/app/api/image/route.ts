@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ファイル名を生成（タイムスタンプを使用）
-    const fileName = `image_${Date.now()}.jpg`;
+    const fileName = `facial.jpg`;
     const filePath = join(uploadDir, fileName);
     
     await writeFile(filePath, buffer);

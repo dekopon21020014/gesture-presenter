@@ -82,7 +82,7 @@ const MyPage = () => {
                     Your Files
                 </Typography>
                 {files === null ? (
-                    "You don't have uploaded yet"
+                    "You don't have uploaded yet" 
                 ) : files.length === 0 ? (
                     <Typography>No files found.</Typography>
                 ) : (

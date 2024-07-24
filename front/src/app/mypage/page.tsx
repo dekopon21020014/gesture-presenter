@@ -17,6 +17,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
 import FileIcon from '@mui/icons-material/InsertDriveFile';
 import PDFUploader from '../components/Form/FileUpForm';
+import Graph from '../components/Graph/Graph';
 
 interface FileData {
     filenames: string[];
@@ -145,6 +146,7 @@ const MyPage = () => {
                 Logout
             </Button>
           </Box>
+          <Graph/>
         </Container>
       );
 };

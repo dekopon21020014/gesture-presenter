@@ -11,6 +11,10 @@ import { useSlideNavigation } from '../useSlideNavigation';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 const slideSettings = {
@@ -31,7 +35,11 @@ const BasicSlider: React.FC = () => {
   
   const { prevSlide, nextSlide } = useSlideNavigation(swiperInstanceRef);
   const [ images ] = usePdfSlider(swiperInstanceRef, pdfid);
-
+  useEffect(() => {
+    if (swiperInstanceRef.current && images.length > 0) {
+      swiperInstanceRef.current.slideTo(0,0);
+    }
+  }, [images])
   return (
     <div>
       <div className="static">
@@ -40,7 +48,7 @@ const BasicSlider: React.FC = () => {
           breakpoints={slideSettings}
           slidesPerView="auto"
           centeredSlides
-          loop
+          loop={false}
           speed={1000}
           pagination={{ clickable: true }}
           initialSlide={0}  // 初期表示で1ページ目を指定

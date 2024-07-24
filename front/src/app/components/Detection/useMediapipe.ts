@@ -120,7 +120,7 @@ export const useMediaPipe = (
           }
           break;
         case 'ILoveYou':
-          if (shutdownCount.current > 5) {
+          if (shutdownCount.current > 3) {
             setIsPresenting(false);
             shutdownCount.current = 0;
             localStorage.setItem('facialIds', JSON.stringify(facialIds));
@@ -141,7 +141,7 @@ export const useMediaPipe = (
       }
     }
     
-  }, [isPresenting, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
+  }, [isPresenting, facialIds, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
     const video = videoRef.current;

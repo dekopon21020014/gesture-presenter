@@ -25,7 +25,7 @@ interface FileData {
 }
 
 const MyPage = () => {    
-    const router = useRouter();
+    // const router = useRouter();
 
     const handleLogout = async (redirectUrl: string) => {
         try {

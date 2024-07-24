@@ -15,4 +15,4 @@ RUN npm install
 #&& npm install @emotion/react @emotion/styled && npm install @mui/material && npm install react-hook-form
 
 # アプリケーションをビルド
-RUN npm run build
+#RUN npm run build

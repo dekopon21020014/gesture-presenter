@@ -1,12 +1,22 @@
 'use client';
 
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { 
+  Button, 
+  Box,
+  Typography
+} from '@mui/material';
 
-export const PDFUploader: React.FC = () => {
+interface PDFUploaderProps {
+  onUploadSuccess: () => void;
+}
+
+export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -16,7 +26,6 @@ export const PDFUploader: React.FC = () => {
 
   const handleUpload = async () => {
     if (!file) return;
-
     setUploading(true);
 
     const formData = new FormData();
@@ -28,11 +37,15 @@ export const PDFUploader: React.FC = () => {
         method: 'POST',
         body: formData,
       });
-
       if (response.ok) {
         const data = await response.json();
         console.log('File uploaded successfully:', data);
-        router.push('/presentation'); // アップロード成功後のリダイレクト
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setFile(null); // ファイルステートをリセット
+        onUploadSuccess(); // ファイルアップロード成功後にリストを更新
+        router.push('/mypage'); // アップロード成功後のリダイレクト
       } else {
         console.error('Upload failed');
       }
@@ -44,13 +57,34 @@ export const PDFUploader: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1>PDF File Uploader</h1>
-      <input type="file" accept=".pdf" onChange={handleFileChange} />
-      <button onClick={handleUpload} disabled={!file || uploading}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <input type="file" accept=".pdf" onChange={handleFileChange} ref={fileInputRef} style={{ display: 'none' }} id="pdf-upload-input" />
+      <label htmlFor="pdf-upload-input">
+        <Button variant="outlined" component="span" sx={{ padding: '10px 20px', borderColor: '#1976d2', color: '#1976d2' }}>
+          Choose PDF
+        </Button>
+      </label>
+      {file && (
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          Selected file: {file.name}
+        </Typography>
+      )}
+      <Button 
+        onClick={handleUpload} 
+        disabled={!file || uploading} 
+        variant="contained" 
+        sx={{ 
+          padding: '10px 20px', 
+          backgroundColor: uploading ? '#ccc' : '#1976d2', 
+          color: '#fff', 
+          borderRadius: 1, 
+          '&:hover': { backgroundColor: '#1565c0' }, 
+          '&:disabled': { backgroundColor: '#ccc', color: '#fff' }
+        }}
+      >
         {uploading ? 'Uploading...' : 'Upload PDF'}
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 };
 

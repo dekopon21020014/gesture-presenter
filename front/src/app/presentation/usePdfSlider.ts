@@ -1,27 +1,25 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import * as pdfjsLib from 'pdfjs-dist';
 import { SwiperClass } from "swiper/react";
 
-export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClass | null>) => {
+// PDFファイルの取得（一覧、1件）
+// 1. 特定のPDFファイルの取得: /api/pdf?filename=example.pdf
+// 2. PDFファイル一覧の取得: /api/pdf?list=true
+
+export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClass | null>, pdfid: string) => {
   const [images, setImages] = useState<string[]>([]);
 
-  async function fetchFileList() {
+  async function fetchPdfFile(id:string) {
     try {
-      const response = await fetch('/api/pdf?list=true');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('PDF files:', data.files);
-      // ここでdata.filesを使用して、UIにファイル一覧を表示するなどの処理を行います
-    } catch (error) {
-      console.error('Error fetching file list:', error);
-    }
-  }
-
-  async function fetchPdfFile(params:string) {
-    try {
-      const response = await fetch(`/api/pdf?filename=${params}`);
+      const response = await fetch(`http://localhost:8080/api/pdf/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -33,14 +31,9 @@ export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClas
   }
 
   useEffect(() => {
-    // PDFファイルのパス指定
-    // 1. 特定のPDFファイルの取得: /api/pdf?filename=example.pdf
-    // 2. PDFファイル一覧の取得: /api/pdf?list=true
-    fetchFileList();
-
     const loadPdf = async () => {
       try {
-        const pdfUrl = await fetchPdfFile("mid.pdf");
+        const pdfUrl = await fetchPdfFile(pdfid);
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
         const tempImages: string[] = [];

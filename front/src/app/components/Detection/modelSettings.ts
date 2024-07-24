@@ -28,7 +28,7 @@ export const setupGestureRecognizer = async () => {
       modelAssetPath: "https://storage.googleapis.com/mediapipe-tasks/gesture_recognizer/gesture_recognizer.task"
     },
     runningMode: "VIDEO",
-    numHands: 1,
+    numHands: 2,
   });
 
   return gestureRecognizer;

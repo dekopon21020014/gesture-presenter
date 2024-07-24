@@ -1,0 +1,9 @@
+fastapi[all]
+uvicorn[standard]
+pipx
+requests
+load_dotenv
+ultralytics
+torch
+torchvision
+torchaudio

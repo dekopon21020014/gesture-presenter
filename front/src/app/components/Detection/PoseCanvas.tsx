@@ -10,11 +10,11 @@ interface PoseCanvasProps {
   poseResult: PoseDetectionResult | null;
   videoRef: React.RefObject<HTMLVideoElement>;
   isPresenting: boolean;
-  addFacialId: (id: number | null) => void;
+  // addFacialId: (id: number | null) => void;
 }
 
 
-export const PoseCanvas = ({ poseResult, videoRef, isPresenting, addFacialId }: PoseCanvasProps) => {
+export const PoseCanvas = ({ poseResult, videoRef, isPresenting }: PoseCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastCaptureTimeRef = useRef(0);
   const [facialId, setFacialId] = useState<number|null>(null);
@@ -38,11 +38,10 @@ export const PoseCanvas = ({ poseResult, videoRef, isPresenting, addFacialId }: 
           try{
             const facial = await postCaptureImage(canvas);
             setFacialId(facial);
-            addFacialId(facial);
           } catch(e) {
             console.error('Error capturing image:', e);
             setFacialId(null);
-            addFacialId(null);
+            // addFacialId(null);
           }
         };
 
@@ -62,6 +61,10 @@ export const PoseCanvas = ({ poseResult, videoRef, isPresenting, addFacialId }: 
 
     canvasCtx.restore();
   }, [poseResult, videoRef, isPresenting]);
+
+  // useEffect(() => {
+  //   addFacialId(facialId);
+  // }, [facialId])
 
 
   return <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />;

@@ -20,7 +20,7 @@ export const useSlideNavigation = (swiperInstanceRef: MutableRefObject<SwiperCla
     };
   }, []);
 
-  const nextSlide = () => {
+  const nextSlide = () => {    
     swiperInstanceRef.current!.slideNext();
   };
 

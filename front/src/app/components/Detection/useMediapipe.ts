@@ -11,6 +11,9 @@ import { Sorry } from "../Effects/sorry";
 import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
 import { useRouter } from "next/navigation";
 
+let history: any[] = [];
+let currentPage = 1;
+
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
   streamReady: boolean,
@@ -75,9 +78,9 @@ export const useMediaPipe = (
     const currentTime = Date.now();
 
     if (gestureLabelA === 'Closed_Fist') {
-      if (startCount.current > 5) {
+      if (startCount.current == 5 && !isPresenting ) {
         setIsPresenting(true);
-        startCount.current = 0;
+        history = [...history, { ['begin']: currentTime }]
       } else {
         startCount.current++;
       }
@@ -87,8 +90,14 @@ export const useMediaPipe = (
         case 'Open_Palm':
           if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
             nextSlide();
+            history = [...history, { [String(++currentPage)]: currentTime }]
+            console.log('next page: ', history);
           } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
-            prevSlide();
+            if (currentPage > 1) {
+             prevSlide();
+              history = [...history, { [String(--currentPage)]: currentTime }]
+              console.log('prev page: ', history);
+            }
           } else if (gestureLabelB == 'Open_Palm') {
             Sorry();
             if (currentTime - lastSoundTimeRef.current >= 3000) {
@@ -124,6 +133,21 @@ export const useMediaPipe = (
             setIsPresenting(false);
             shutdownCount.current = 0;
             localStorage.setItem('facialIds', JSON.stringify(facialIds));
+            history = [...history, { ['end']: currentTime }]
+            console.log('history = ', history)
+            // 履歴を JSON ファイルとしてダウンロード
+            const downloadHistory = (data: any[], filename = 'history.json') => {
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              a.click();
+              URL.revokeObjectURL(url); // メモリを解放
+            };
+
+            downloadHistory(history);
+
             router.push('/mypage');
           } else {
             shutdownCount.current++;

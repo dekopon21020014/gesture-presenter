@@ -1,90 +1,105 @@
-'use client';
-import { SignUpForm } from '@/app/components/Form/SignUpForm';
-import { useSignUpForm } from './use-sign-up-form';
-import { Box, Typography, Button } from '@mui/material';
+// app/signup/page.tsx
+'use client'
 
-export default function Home() {
-  const { isLoading, signUp } = useSignUpForm();
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import firebase_app from "../../../firebase-config";
+import { getAuth, GoogleAuthProvider, createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup, validatePassword } from 'firebase/auth';
+import { FirebaseError } from '@firebase/util'
+
+
+
+export default function SignUpPage() {
+  const auth = getAuth(firebase_app);
+
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<FirebaseError|undefined>(undefined);
+
+  // Googleでサインアップ
+  const signUpWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log('Google sign-up success:', user);
+      router.push('/mypage');
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        setError(error);
+      }
+    }
+  };
+
+  // メール・パスワードでサインアップ
+  const signUpWithEmail = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      setEmail('');
+      setPassword('');
+      router.push('/mypage'); 
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        setError(error);
+      }
+    }
+  };
 
   return (
-    <main style={{ paddingTop: '80px', textAlign: 'center' }}>
-      <Typography 
-        variant="h4" 
-        component="h4" 
-        style={{ 
-          marginBottom: '20px', 
-          position: 'relative', 
-          display: 'inline-block'
-        }}
-      >
-        SIGNUP
-        <Box 
-          style={{ 
-            position: 'absolute', 
-            left: '0', 
-            bottom: '-5px', 
-            width: '100%', 
-            height: '5px', 
-            backgroundColor: 'red',
-            zIndex: '-2'
-          }}
-        />
-      </Typography>
-      <SignUpForm onSubmit={signUp} isLoading={isLoading} />
-      <Box display="flex" flexDirection="column" alignItems="center" marginTop="50px" marginBottom="50px">
-        <Box width="200px">
-          <Button 
-            variant="contained" 
-            href="/login" 
-            style={{ 
-              padding: '8px 10px', 
-              fontSize: '16px', 
-              backgroundColor: '#FF6F6F',
-              color: 'white', 
-              borderColor: 'transparent', 
-              borderWidth: '2px', 
-              width: '100%' 
-            }}
-          >
-            login
-          </Button>
-        </Box>
-        <Box width="200px" marginTop="20px">
-          <Button 
-            variant="contained" 
-            href="/mypage" 
-            style={{ 
-              padding: '8px 10px', 
-              fontSize: '16px', 
-              backgroundColor: '#6F8BCC',
-              color: 'white',
-              borderColor: 'transparent',
-              borderWidth: '2px', 
-              width: '100%' 
-            }}
-          >
-            mypage
-          </Button>
-        </Box>
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-3xl font-semibold text-center text-gray-900">Sign Up</h2>
 
-        <Box width="200px" marginTop="70px">
-          <Button 
-            variant="contained" 
-            href="/top"
-            style={{ 
-              padding: '8px 10px', 
-              fontSize: '16px', 
-              backgroundColor: '#9CCC65', 
-              color: 'white',
-              borderColor: 'transparent',
-              borderWidth: '2px', 
-              width: '100%' 
-            }}
+        <button
+          className="w-full rounded-md flex items-center justify-center border border-slate-300 py-3 px-6 text-center text-base transition-all shadow-sm hover:shadow-lg text-slate-600 hover:text-white hover:bg-slate-800 hover:border-slate-800 focus:text-white focus:bg-slate-800 focus:border-slate-800 active:border-slate-800 active:text-white active:bg-slate-800 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+          type="button"
+          onClick={signUpWithGoogle}
+        >
+          <img
+            src="https://docs.material-tailwind.com/icons/google.svg"
+            alt="Google"
+            className="h-6 w-6 mr-3"
+          />
+          Continue with Google
+        </button>
+
+        <form onSubmit={signUpWithEmail} className="space-y-4">
+          <div>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none"
           >
-            HOME
-          </Button>
-        </Box>
-      </Box>
-    </main>
+            Sign up
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Already have an account? <a href="/login" className="text-blue-500 hover:underline">Login</a>
+        </p>
+
+        {error && <p className="text-red-500 text-center mt-4">{error.message}</p>}
+      </div>
+    </div>
   );
 }

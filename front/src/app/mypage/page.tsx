@@ -103,7 +103,7 @@ const MyPage = () => {
               Your Files
             </Typography>
             {files === null || files.filenames == null ? (
-                <Typography aria-live="polite">You don't have uploaded any file yet.</Typography>
+                <Typography aria-live="polite">You don&apos;t have uploaded any file yet.</Typography>
             ) : files.filenames.length === 0 ? (
                 <Typography>No files found.</Typography>
             ) : (

@@ -8,9 +8,6 @@ import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
 import { getPDFFromStore } from '../../utils/pdfStore';
-import { Mediapipe } from '../../components/Detection/Mediapipe';
-import { Effects } from '../../components/Effects/Effects';
-import { Sounds } from '../../components/Sounds/Sounds';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -97,19 +94,6 @@ const PresentationPage = () => {
     };
   }, []);
 
-  // スライド移動のハンドラー
-  const nextSlide = () => {
-    if (swiperInstanceRef.current) {
-      swiperInstanceRef.current.slideNext();
-    }
-  };
-
-  const prevSlide = () => {
-    if (swiperInstanceRef.current) {
-      swiperInstanceRef.current.slidePrev();
-    }
-  };
-
   // ローディング表示
   if (loading) {
     return (
@@ -131,8 +115,8 @@ const PresentationPage = () => {
   }
 
   return (
-    <div className="relative h-screen w-screen">
-      <div className="h-full">
+    <div className="h-screen w-screen">
+      <div className="relative h-full">
         <Swiper
           modules={[Navigation, Pagination]}
           breakpoints={slideSettings}
@@ -156,13 +140,6 @@ const PresentationPage = () => {
           ))}
         </Swiper>
       </div>
-
-      {/* ジェスチャー検出とエフェクト */}
-      <div className="absolute top-0 right-0 z-10">
-        <Mediapipe nextSlide={nextSlide} prevSlide={prevSlide} />
-      </div>
-      <Effects />
-      <Sounds />
     </div>
   );
 };

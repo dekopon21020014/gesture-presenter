@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, ChangeEvent, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Button, 
@@ -11,144 +11,187 @@ import {
   List,
   ListItem,
   ListItemText,
-  Link
+  IconButton,
+  Divider
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
 import FileIcon from '@mui/icons-material/InsertDriveFile';
-import PDFUploader from '../components/Form/FileUpForm';
-import Graph from '../components/Graph/Graph';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import PresentationIcon from '@mui/icons-material/Slideshow';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FileUpFormLocal from '../components/Form/FileUpFormLocal';
+import { cleanupOldFiles } from '../utils/pdfStore';
 
-interface FileData {
-    filenames: string[];
-    fileIds: number[];
+interface UploadedFile {
+  id: string;
+  name: string;
+  timestamp: number;
 }
 
 const MyPage = () => {    
-    // const router = useRouter();
+    const router = useRouter();
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
-    const handleLogout = async (redirectUrl: string) => {
-        try {
-            const response = await fetch('http://localhost:8080/logout', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            if (response.ok) {
-                window.location.href = redirectUrl;
-                console.log('Logout successful');
-            } else {
-                console.error('Logout failed');
-            }
-        } catch (error) {
-            console.error('Error during logout:', error);
+    // クリーンアップ関数の実行
+    useEffect(() => {
+      const cleanup = () => {
+        cleanupOldFiles();
+        // UIの更新
+        if (window.pdfStore) {
+          const currentFiles = Object.entries(window.pdfStore).map(([id, data]) => ({
+            id,
+            name: data.name,
+            timestamp: data.timestamp
+          }));
+          setUploadedFiles(currentFiles);
         }
-    };
+      };
 
-    const handleLogoutClick = () => handleLogout('/login');
-    const handleHomeClick = () => handleLogout('/top');
-
-    const [files, setFiles] = useState<FileData | null>(null);
-
-    const fetchFiles = useCallback(async () => {
-        try {
-            const response = await fetch('http://localhost:8080/api/pdf', { 
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            const data = await response.json();
-            setFiles(data);
-        } catch (error) {
-            console.error('Error fetching files:', error);
-            setFiles({ filenames: [], fileIds: [] });
-        }
+      cleanup();
+      const interval = setInterval(cleanup, 5 * 60 * 1000); // 5分ごとにチェック
+      return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        const storedFacialIds = localStorage.getItem('facialIds');
-        if (storedFacialIds) {
-          const parsedFacialIds = JSON.parse(storedFacialIds);
-          console.log(parsedFacialIds);
-          // parsedFacialIdsを使用して何かする
-          localStorage.removeItem('facialIds'); // 使用後は削除
-        }
-      }, []);
+    const handleLocalUploadSuccess = (file: File) => {
+      const fileId = Math.random().toString(36).substr(2, 9);
+      
+      if (window.pdfStore) {
+        window.pdfStore[fileId] = {
+          file,
+          name: file.name,
+          timestamp: Date.now()
+        };
+      }
 
-    useEffect(() => {
-        fetchFiles();
-    }, [fetchFiles]);
+      setUploadedFiles(prev => [...prev, {
+        id: fileId,
+        name: file.name,
+        timestamp: Date.now()
+      }]);
+    };
+
+    const handleDelete = (fileId: string) => {
+      if (window.pdfStore && window.pdfStore[fileId]) {
+        delete window.pdfStore[fileId];
+        setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+      }
+    };
+
+    const handleAnalyze = (fileId: string) => {
+      router.push(`/mypage/analysis?pdf_id=${fileId}`);
+    };
+
+    const handlePresent = (fileId: string) => {
+      router.push(`/mypage/presentation?pdf_id=${fileId}`);
+    };
+
+    const handleLogout = async () => {
+      if (window.pdfStore) {
+        window.pdfStore = {};
+      }
+      setUploadedFiles([]);
+      router.push('/login');
+    };
+
+    const handleHomeClick = () => {
+      router.push('/top');
+    };
 
     return (
         <Container maxWidth="md">
-          <Box component="main" sx={{ my: 4, textAlign: 'center' }}>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
-              My Page
+          <Box component="main" sx={{ my: 4 }}>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ 
+              fontWeight: 'bold',
+              textAlign: 'center'
+            }}>
+              マイページ
             </Typography>
-            <Typography variant="body1" paragraph>
-              ここは認証されたユーザーのみがアクセスできるページです。
+            <Typography variant="body1" paragraph sx={{ textAlign: 'center' }}>
+              PDFファイルをアップロードして分析または発表を開始できます。
               <br />
-              以下より使用したいPDFファイルをアップロードしてください。
+              ※アップロードされたファイルは30分後に自動的に削除されます。
             </Typography>
           </Box>
 
-          <PDFUploader onUploadSuccess={fetchFiles} />
+          <FileUpFormLocal onUploadSuccess={handleLocalUploadSuccess} />
           
           <Paper elevation={3} sx={{ p: 3, mt: 4 }} component="section">
             <Typography variant="h5" component="h2" gutterBottom>
-              Your Files
+              アップロード済みファイル
             </Typography>
-            {files === null || files.filenames == null ? (
-                <Typography aria-live="polite">You don&apos;t have uploaded any file yet.</Typography>
-            ) : files.filenames.length === 0 ? (
-                <Typography>No files found.</Typography>
+            {uploadedFiles.length === 0 ? (
+              <Typography color="text.secondary">
+                ファイルがアップロードされていません。
+              </Typography>
             ) : (
-                <List>
-                    {files.filenames.map((filename, index) => (
-                        <ListItem key={files.fileIds[index]}>
-                            <FileIcon sx={{ mr: 2 }} />
-                            <ListItemText
-                                primary={
-                                    <Link href={`/presentation/${files.fileIds[index]}`} underline="hover">
-                                        {filename}
-                                    </Link>
-                                }
-                            />
-                        </ListItem>
-                    ))}
-                </List>
+              <List>
+                {uploadedFiles.map((file) => (
+                  <React.Fragment key={file.id}>
+                    <ListItem
+                      secondaryAction={
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton 
+                            onClick={() => handleAnalyze(file.id)}
+                            aria-label="analyze"
+                            color="primary"
+                          >
+                            <AnalyticsIcon />
+                          </IconButton>
+                          <IconButton 
+                            onClick={() => handlePresent(file.id)}
+                            aria-label="present"
+                            color="secondary"
+                          >
+                            <PresentationIcon />
+                          </IconButton>
+                          <IconButton 
+                            onClick={() => handleDelete(file.id)}
+                            aria-label="delete"
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+                      }
+                    >
+                      <FileIcon sx={{ mr: 2 }} />
+                      <ListItemText
+                        primary={file.name}
+                        secondary={new Date(file.timestamp).toLocaleString()}
+                      />
+                    </ListItem>
+                    <Divider />
+                  </React.Fragment>
+                ))}
+              </List>
             )}
           </Paper>
 
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4, mb: 4 }}>
             <Button
-                variant="contained"
-                color="primary"
-                onClick={handleHomeClick}
-                startIcon={<HomeIcon />}
-                aria-label="Home"
-                sx={{ minWidth: 200, height: 60 }}
+              variant="contained"
+              color="primary"
+              onClick={handleHomeClick}
+              startIcon={<HomeIcon />}
+              aria-label="Home"
+              sx={{ minWidth: 200, height: 60 }}
             >
-                Home
+              ホーム
             </Button>
             <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleLogoutClick}
-                startIcon={<LogoutIcon />}
-                aria-label="Logout"
-                sx={{ minWidth: 200, height: 60 }}
+              variant="contained"
+              color="secondary"
+              onClick={handleLogout}
+              startIcon={<LogoutIcon />}
+              aria-label="Logout"
+              sx={{ minWidth: 200, height: 60 }}
             >
-                Logout
+              ログアウト
             </Button>
           </Box>
-          <Graph/>
         </Container>
-      );
+    );
 };
 
 export default MyPage;

@@ -79,11 +79,11 @@ const MyPage = () => {
     };
 
     const handleAnalyze = (fileId: string) => {
-      router.push(`/mypage/analysis?pdf_id=${fileId}`);
+      router.push(`/analysis?pdf_id=${fileId}`);
     };
 
     const handlePresent = (fileId: string) => {
-      router.push(`/mypage/presentation?pdf_id=${fileId}`);
+      router.push(`/presentation?pdf_id=${fileId}`);
     };
 
     const handleLogout = async () => {

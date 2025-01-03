@@ -15,26 +15,37 @@ const AnalysisPage = () => {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
 
   useEffect(() => {
+    try {
+      const response = fetch('/api/test-connection');
+      const data = response.json();
+      console.log('Connection test result:', data);
+    } catch (error) {
+      console.error('Test connection error:', error);
+    }
+
     const fetchAnalysis = async (file: File) => {
       setLoading(true);
       const formData = new FormData();
-      formData.append('file', file);
-
+      formData.append('file', file, file.name); // ファイル名を明示的に指定
+    
       try {
         const response = await fetch('/api/analyze-slide', {
           method: 'POST',
           body: formData,
         });
-
+    
         if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
+          const errorText = await response.text();
+          console.error('API error:', errorText);
+          throw new Error(`Error: ${response.status} - ${errorText}`);
         }
-
+    
         const data = await response.json();
         console.log('Backend response:', data);
-        setAnalysisResult(data.analysis_result || 'No result available');
+        setAnalysisResult(data.gemini_response || 'No result available'); // レスポンスの構造に合わせて修正
       } catch (error) {
         console.error('Analysis API error:', error);
+        setAnalysisResult('分析中にエラーが発生しました。');
       } finally {
         setLoading(false);
       }
@@ -49,6 +60,7 @@ const AnalysisPage = () => {
     } else {
       setLoading(false);
     }
+
   }, [pdfId]);
 
   if (loading) {
@@ -58,6 +70,8 @@ const AnalysisPage = () => {
       </Box>
     );
   }
+
+
 
   if (!pdfFile) {
     return (

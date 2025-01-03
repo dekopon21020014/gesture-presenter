@@ -12,6 +12,8 @@ services:
     command: sh -c "npm run dev"
     ports:
       - "3000:3000"
+    networks:
+      - app-network
     
   back:
     container_name: back
@@ -41,26 +43,9 @@ services:
     environment:
       - PYTHONPATH=/app
     command: sh -c "uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
+    networks:
+      - app-network
 
-  # db:
-  #   container_name: db
-  #   build:
-  #     context: .
-  #     dockerfile: ./dockerfiles/db/Dockerfile
-  #   #platform: linux/x86_64
-  #   tty: true
-  #   ports:
-  #     - 3306:3306
-  #   env_file:
-  #     - ./db/.env
-  #   volumes:
-  #     - type: volume
-  #       source: mysql-data
-  #       target: /var/lib/mysql
-  #     - type: bind
-  #       source: ./db/init
-  #       target: /docker-entrypoint-initdb.d
-  
   redis:
     container_name: redis
     image: redis:latest
@@ -83,3 +68,6 @@ volumes:
   mysql-data:
     name: gesture-presenter
   
+networks:
+  app-network:
+    driver: bridge

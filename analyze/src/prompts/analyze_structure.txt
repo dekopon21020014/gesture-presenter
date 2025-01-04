@@ -1,0 +1,16 @@
+"あなたはスライドの構造を分析するアシスタントです。"
+以下のスライドの内容を分析し、以下の構造的特徴の有無を判定してください：
+1. 目次の有無
+2. まとめ・結論の有無
+3. 問題提起の有無
+4. 具体例の有無
+
+スライドの内容：
+{text}
+
+回答は以下の形式で記述してください：
+has_toc: true/false
+has_summary: true/false
+has_problem_statement: true/false
+has_examples: true/false
+"""

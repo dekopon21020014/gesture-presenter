@@ -1,0 +1,11 @@
+スライドの分析を行ってください。以下の点について詳細に評価してください：
+1. 内容の一貫性
+2. 視覚的一貫性
+   - 平均フォントサイズ: {font_analysis[mean_size]:.1f}
+   - フォントサイズのばらつき: {font_analysis[std_size]:.1f}
+   - 使用されているフォントサイズの種類: {font_analysis[size_variation]}個
+3. メインメッセージ
+
+
+スライド内容:
+{full_text}"

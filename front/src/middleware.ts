@@ -34,7 +34,6 @@ export function middleware(request: NextRequest) {
   return response
 }
 
-// `matcher` に `/mypage` のルートを指定
 export const config = {
-    matcher: ['/mypage/:path*'],
+    matcher: ['/mypage/:path*', '/presentation', '/analysis'],
   };

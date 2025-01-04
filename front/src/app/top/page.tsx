@@ -249,7 +249,7 @@ const Top = () => {
                     id="button-section"
                     sx={{
                         padding: '3vh 6vw',
-                        border: '4px solid black',
+                        border: '1px solid black',
                         display: 'inline-block',
                         margin: '0 auto',
                         textAlign: 'center',

@@ -4,29 +4,38 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, Typography, Paper, Box, CircularProgress } from '@mui/material';
 import { getPDFFromStore } from '../utils/pdfStore';
-import { Button } from '@mui/material'
-import {Link} from 'next'
+import { Button } from '@mui/material';
+import Link from 'next/link';
+
+// Import the AnalysisResult component we created earlier
+import AnalysisResult from './AnalysisResult';
+
+interface FontAnalysis {
+  mean_size: number;
+  size_variation: number;
+  std_size: number;
+}
+
+interface AnalysisData {
+  font_analysis: FontAnalysis;
+  gemini_response: string;
+}
 
 const AnalysisPage = () => {
   const searchParams = useSearchParams();
   const pdfId = searchParams.get('pdf_id');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const response = fetch('/api/test-connection');
-      const data = response.json();
-      console.log('Connection test result:', data);
-    } catch (error) {
-      console.error('Test connection error:', error);
-    }
-
     const fetchAnalysis = async (file: File) => {
       setLoading(true);
+      setError(null);
+      
       const formData = new FormData();
-      formData.append('file', file, file.name); // ファイル名を明示的に指定
+      formData.append('file', file, file.name);
     
       try {
         const response = await fetch('/api/analyze-slide', {
@@ -42,10 +51,16 @@ const AnalysisPage = () => {
     
         const data = await response.json();
         console.log('Backend response:', data);
-        setAnalysisResult(data.gemini_response || 'No result available'); // レスポンスの構造に合わせて修正
+        
+        // Validate the response data structure
+        if (!data.gemini_response) {
+          throw new Error('Invalid response format: missing gemini_response');
+        }
+        
+        setAnalysisData(data);
       } catch (error) {
         console.error('Analysis API error:', error);
-        setAnalysisResult('分析中にエラーが発生しました。');
+        setError(error instanceof Error ? error.message : '分析中にエラーが発生しました。');
       } finally {
         setLoading(false);
       }
@@ -60,7 +75,6 @@ const AnalysisPage = () => {
     } else {
       setLoading(false);
     }
-
   }, [pdfId]);
 
   if (loading) {
@@ -70,8 +84,6 @@ const AnalysisPage = () => {
       </Box>
     );
   }
-
-
 
   if (!pdfFile) {
     return (
@@ -95,13 +107,38 @@ const AnalysisPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Container>
+        <Typography variant="h4" component="h1" align="center" sx={{ my: 4 }}>
+          PDF分析
+        </Typography>
+        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            ファイル情報:
+          </Typography>
+          <Typography>
+            ファイル名: {pdfFile.name}
+            <br />
+            サイズ: {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+          </Typography>
+        </Paper>
+        <Paper elevation={3} sx={{ p: 3, bgcolor: 'error.light' }}>
+          <Typography color="error.dark">
+            エラーが発生しました: {error}
+          </Typography>
+        </Paper>
+      </Container>
+    );
+  }
+
   return (
     <Container>
       <Typography variant="h4" component="h1" align="center" sx={{ my: 4 }}>
         PDF分析
       </Typography>
 
-      <Paper elevation={3} sx={{ p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
         <Typography variant="h6" gutterBottom>
           ファイル情報:
         </Typography>
@@ -112,15 +149,11 @@ const AnalysisPage = () => {
         </Typography>
       </Paper>
 
-      {analysisResult && (
-        <Paper elevation={3} sx={{ mt: 4, p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            分析結果:
-          </Typography>
-          <Typography>
-            {analysisResult}
-          </Typography>
-        </Paper>
+      {analysisData && (
+        <AnalysisResult 
+          geminiResponse={analysisData.gemini_response}
+          fontAnalysis={analysisData.font_analysis}
+        />
       )}
     </Container>
   );

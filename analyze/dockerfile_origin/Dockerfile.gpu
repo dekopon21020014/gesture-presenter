@@ -1,0 +1,64 @@
+# CUDA 対応ベースイメージを使用 (Ubuntu 20.04 + CUDA 11.8)
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+
+# 作業ディレクトリを設定
+WORKDIR /
+
+# タイムゾーンを設定
+ENV TZ=Asia/Tokyo
+
+# 必要な依存関係をシステムにインストール
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    libsndfile1 \
+    libsndfile1-dev \
+    ffmpeg \
+    git \
+    tzdata \
+    software-properties-common \
+    wget \
+    && add-apt-repository -y ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y \
+    python3.11 \
+    python3.11-venv \
+    python3.11-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# get-pip.pyを使用して最新のpipをインストール
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+    python3.11 get-pip.py && \
+    rm get-pip.py
+
+# python3とpip3のシンボリックリンクを作成
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 && \
+    ln -sf /usr/local/bin/pip /usr/bin/pip3
+
+# Python の依存関係をインストール
+COPY ./src/requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    pip3 uninstall -y pymupdf && \
+    pip3 install pymupdf
+
+# ReazonSpeech を GitHub からクローン
+RUN git clone https://github.com/reazon-research/ReazonSpeech
+
+# nemo-asr をインストール
+RUN pip3 install ./ReazonSpeech/pkg/nemo-asr
+
+# 環境変数を設定 (PYTHONPATH を更新)
+ENV PYTHONPATH=/app
+
+# アプリケーション用の作業ディレクトリ
+WORKDIR /app
+
+# アプリケーションコードをコピー
+COPY ./src /app
+
+# ポートを公開
+EXPOSE 8001
+
+# FastAPI アプリケーションを起動 (uvicorn を利用)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]

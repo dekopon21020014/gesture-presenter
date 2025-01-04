@@ -3,38 +3,31 @@
 import { useEffect, useState } from "react";
 import * as pdfjsLib from 'pdfjs-dist';
 import { SwiperClass } from "swiper/react";
+import { getPDFFromStore } from '../utils/pdfStore';
 
 // PDFファイルの取得（一覧、1件）
 // 1. 特定のPDFファイルの取得: /api/pdf?filename=example.pdf
 // 2. PDFファイル一覧の取得: /api/pdf?list=true
 
-export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClass | null>, pdfid: string) => {
+export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClass | null>, pdfId: string) => {
   const [images, setImages] = useState<string[]>([]);
-
-  async function fetchPdfFile(id:string) {
-    try {
-      const response = await fetch(`http://localhost:8080/api/pdf/${id}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const pdfBlob = await response.blob();
-      return URL.createObjectURL(pdfBlob);
-    } catch (error) {
-      console.error('Error fetching file list:', error);
-    }
-  }
 
   useEffect(() => {
     const loadPdf = async () => {
+      if (!pdfId) {
+        console.error('PDF ID is not provided.');
+        return;
+      }
+
       try {
-        const pdfUrl = await fetchPdfFile(pdfid);
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        const file = getPDFFromStore(pdfId);
+        if (!file) {
+          console.error('PDF file not found in the store.');
+          return;
+        }
+
+        const fileUrl = URL.createObjectURL(file);
+        const loadingTask = pdfjsLib.getDocument(fileUrl);
         const pdf = await loadingTask.promise;
         const tempImages: string[] = [];
 
@@ -53,20 +46,22 @@ export const usePdfSlider = (swiperInstanceRef:React.MutableRefObject<SwiperClas
             tempImages.push(img);
           }
         }
+
         setImages(tempImages);
+        URL.revokeObjectURL(fileUrl);
       } catch (error) {
         console.error('Error loading PDF:', error);
       }
     };
 
     loadPdf();
-  }, []);
+  }, [pdfId]);
 
   useEffect(() => {
     if (swiperInstanceRef.current) {
-      swiperInstanceRef.current.slideTo(0, 0);  // 初期スライドを設定
+      swiperInstanceRef.current.slideTo(0, 0); // 初期スライドを設定
     }
   }, [images]);
 
-  return [ images ]
-}
+  return [images];
+};

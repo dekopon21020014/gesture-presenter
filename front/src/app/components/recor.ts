@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 type Hooks = {
   startRecording: () => void;
@@ -14,13 +14,19 @@ export const useWhisperHook = (): Hooks => {
   const [isAudio, setIsAudio] = useState<boolean>(false);
   const [recording, setRecording] = useState(false);
 
+  useEffect(() => {
+    if (audioFile) {
+      sendAudioFile();
+    }
+  }, [audioFile]);
+
   const handleDataAvailable = (event: BlobEvent) => {
     // 音声ファイル生成
     const file = new File([event.data], "audio.webm", {
       type: event.data.type,
       lastModified: Date.now(),
     });
-    setAudioFile(file);
+    setAudioFile(file);    
   };
 
   const startRecording = async () => {
@@ -42,6 +48,33 @@ export const useWhisperHook = (): Hooks => {
     // 録音停止
     mediaRecorder.current?.stop();
     setIsAudio(false);
+    // sendAudioFile();
+  };
+
+  const sendAudioFile = async () => {
+    if (!audioFile) return;
+    // ファイルを送信するためにFormDataを作成
+    const formData = new FormData();
+    console.log("Audio File Set: ", audioFile);
+    formData.append("file", audioFile);
+
+    try {
+      console.log("==============");
+      const response = await fetch("http://localhost:8000/analyze_voice", {
+        method: "POST",
+        body: formData,
+      });      
+      if (response.ok) {
+        //alert("Audio file sent successfully!");
+        console.log("Response:", response);
+      } else {
+        console.error("Failed to send audio file:", response.statusText);
+        console.log("Response:", response);    
+      }
+    } catch (error) {
+      console.error("Error while sending audio file:", error);
+      alert("Error occurred while sending audio file.");
+    }
   };
 
   return {

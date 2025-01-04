@@ -4,34 +4,38 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func GetRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-        AllowOrigins:     []string{"http://localhost:3000"}, // フロントエンドのオリジン
-        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-        AllowHeaders:     []string{"Origin", "Content-Type", "Cookie"},
-        AllowCredentials: true,
-    }))
+		AllowOrigins:     []string{"http://localhost:3000"}, // フロントエンドのオリジン
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Cookie"},
+		AllowCredentials: true,
+	}))
 
 	router.LoadHTMLGlob("view/*.html")
 
 	router.GET("/", getTop)
 	router.GET("/verify-token", verifyToken)
 	router.GET("/api/pdf", getPdfs)
-	router.POST("/api/pdf", uploadPdf)	
+	router.POST("/api/pdf", uploadPdf)
+	router.GET("/mypage", getMypage)
+	router.GET("/api/pdf/:id", getPdfById)
+	router.GET("/logout", getLogout)
 
-
-	loginCheckGroup := router.Group("/", checkLogin())
-	{
-		loginCheckGroup.GET("/mypage", getMypage)
-		loginCheckGroup.GET("/logout", getLogout)
-		loginCheckGroup.GET("/api/pdf/:id", getPdfById)
-	}
+	/*
+		loginCheckGroup := router.Group("/", checkLogin())
+		{
+			loginCheckGroup.GET("/mypage", getMypage)
+			loginCheckGroup.GET("/logout", getLogout)
+			loginCheckGroup.GET("/api/pdf/:id", getPdfById)
+		}
+	*/
 	logoutCheckGroup := router.Group("/", checkLogout())
 	{
 		logoutCheckGroup.GET("/signup", getSignup)
@@ -43,6 +47,7 @@ func GetRouter() *gin.Engine {
 	return router
 }
 
+/*
 func checkLogin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookieKey := os.Getenv("LOGIN_USER_ID_KEY")
@@ -55,6 +60,7 @@ func checkLogin() gin.HandlerFunc {
 		}
 	}
 }
+*/
 
 func checkLogout() gin.HandlerFunc {
 	return func(c *gin.Context) {

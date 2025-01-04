@@ -20,7 +20,7 @@ const Page = () => {
       <button onClick={startRecording} disabled={recording}>
         Start Recording
       </button>
-      <button onClick={stopRecording} disabled={recording}>
+      <button onClick={stopRecording} /*disabled={recording}*/>
         Stop Recording
       </button>
       {recording && <div>Recording...</div>}

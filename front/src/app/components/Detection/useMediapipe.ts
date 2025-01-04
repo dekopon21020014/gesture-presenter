@@ -10,6 +10,7 @@ import { Happy } from "../Effects/Happy";
 import { Sorry } from "../Effects/sorry";
 import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
 import { useRouter } from "next/navigation";
+import { useWhisperHook } from "../recor";
 
 let history: any[] = [];
 let currentPage = 1;
@@ -33,6 +34,7 @@ export const useMediaPipe = (
   const startCount = useRef(0);
   const shutdownCount = useRef(0);
   const router = useRouter();
+  const { startRecording, stopRecording, recording, audioFile } = useWhisperHook();
 
   const initializeTasks = useCallback(async () => {
     try {
@@ -81,6 +83,7 @@ export const useMediaPipe = (
       if (startCount.current == 5 && !isPresenting ) {
         setIsPresenting(true);
         history = [...history, { ['begin']: currentTime }]
+        startRecording();
       } else {
         startCount.current++;
       }
@@ -89,14 +92,16 @@ export const useMediaPipe = (
       switch(gestureLabelA) {
         case 'Open_Palm':
           if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
+            stopRecording();
             nextSlide();
             history = [...history, { [String(++currentPage)]: currentTime }]
-            console.log('next page: ', history);
+            startRecording();
           } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
             if (currentPage > 1) {
-             prevSlide();
+              stopRecording();
+              prevSlide();
               history = [...history, { [String(--currentPage)]: currentTime }]
-              console.log('prev page: ', history);
+              startRecording();
             }
           } else if (gestureLabelB == 'Open_Palm') {
             Sorry();

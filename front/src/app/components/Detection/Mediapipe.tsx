@@ -14,15 +14,6 @@ export const Mediapipe = ({ nextSlide, prevSlide }: MediapipeProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { streamReady } = useStream(videoRef, CAMERA_WIDTH, CAMERA_HEIGHT);
   const { poseResult, isPresenting } = useMediaPipe(videoRef, streamReady, facialIds, nextSlide, prevSlide);
-
-  // const addFacialId = (id: number | null) => {
-  //   if (id !== null) {
-  //     if(id == undefined) setFacialIds(prev => [...prev, 5]);
-  //     setFacialIds(prev => [...prev, id]);
-  //   }
-  // };
-
-
   
   return(
     <div>

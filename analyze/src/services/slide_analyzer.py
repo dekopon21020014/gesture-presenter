@@ -159,3 +159,32 @@ class SlideAnalyzer:
                 "has_examples": False,
                 "error": f"コンテンツ分析中にエラーが発生しました: {str(e)}"
             }
+    
+    def get_comparison_feedback(self, comparison_results):
+        """比較結果に基づくフィードバックを生成"""
+        prompt = load_prompt(
+            "analyze_comparison.txt",
+            own_slide_content_distribution=self._format_content_distribution(
+                comparison_results['current']['content_distribution']
+            ),
+            ref_slides_content_distribution=self._format_content_distribution(
+                comparison_results['reference_avg']
+            ),
+            comparison_of_structure=self._format_structural_comparison(
+                comparison_results['structural_features']
+            )
+        )
+
+        response = gemini_model.generate_content(prompt)
+        return response.text
+    
+    def _format_content_distribution(self, distribution):
+        """コンテンツ分布のフォーマット"""
+        return "\n".join([f"- {category}: {value:.1f}%" for category, value in distribution.items()])
+
+    def _format_structural_comparison(self, comparison):
+        """構造的特徴の比較結果のフォーマット"""
+        return "\n".join([
+            f"- {feature.replace('_ratio', '')}: {value*100:.0f}%の参照スライドが含む"
+            for feature, value in comparison.items()
+        ])

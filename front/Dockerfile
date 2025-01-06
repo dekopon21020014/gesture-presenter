@@ -16,3 +16,12 @@ RUN npm install
 
 # アプリケーションをビルド
 #RUN npm run build
+
+# アプリケーションをビルド
+RUN npm run build
+
+# 実行時に必要なポートを指定
+EXPOSE 3000
+
+# アプリケーションを起動
+CMD ["npm", "start"]

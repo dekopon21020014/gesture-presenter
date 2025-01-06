@@ -5,10 +5,10 @@ FROM node:18.17.1
 WORKDIR /app
 
 # キャッシュ利用で効率化するために別でコピー
-COPY /front/package.json /front/package-lock.json ./
+COPY package.json package-lock.json ./
 
 # ソースコードをコピー
-COPY /front ./
+COPY . ./
 
 # 依存関係をインストール
 RUN npm install 

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Python のパッケージキャッシュを利用できるように設定し、依存関係をインストール
-COPY ./src/requirements.txt ./requirements.txt
+COPY ./analyze/src/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip uninstall -y pymupdf && \

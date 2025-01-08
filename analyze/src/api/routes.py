@@ -35,6 +35,7 @@ async def analyze_slide(
     pdf_data = await file.read()
     analyzer = SlideAnalyzer()    
     comparison_result = {}
+    comparison_feedback = ""
 
     if ref: # 比較用のスライドがあった場合
         comparison_result = await analyzer.compare(pdf_data, ref)

@@ -3,18 +3,30 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, Typography, Paper, Box, CircularProgress } from '@mui/material';
-import { getPDFFromStore } from '../../utils/pdfStore';
+import { fetchPDF } from '../../utils/pdfStore';
 
 const AnalysisPage = () => {
   const searchParams = useSearchParams();
   const pdfId = searchParams.get('pdf_id');
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null | undefined>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const file = getPDFFromStore(pdfId);
-    setPdfFile(file);
-    setLoading(false);
+
+    const fetchAndSetPdfFile = async () => {
+      if (pdfId) {
+        try {
+          const file = await fetchPDF(pdfId);
+          setPdfFile(file);
+        } catch (error) {
+          console.error("Error in fetching the PDF:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchAndSetPdfFile();
   }, [pdfId]);
 
   if (loading) {

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import firebase_app from "../../../firebase-config";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseError } from '@firebase/util'
 
 const auth = getAuth(firebase_app);
@@ -13,6 +13,19 @@ export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<FirebaseError|undefined>(undefined);
+
+  // Firebase Authの監視
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push("/mypage");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+  
 
   // Googleでサインイン
   const signInWithGoogle = async () => {

@@ -7,7 +7,7 @@ import { Navigation, Pagination } from 'swiper/modules';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
-import { getPDFFromStore } from '../../utils/pdfStore';
+import { getFileUrl } from '../../utils/pdfStore';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -36,14 +36,17 @@ const PresentationPage = () => {
   // PDFからページ画像を生成
   useEffect(() => {
     const loadPdf = async () => {
-      const file = getPDFFromStore(pdfId);
-      if (!file) {
-        setLoading(false);
-        return;
+
+      if (!pdfId) {
+        throw new Error('PDF IDが指定されていません');
+      }
+      const fileUrl = await getFileUrl(pdfId);
+      
+      if (!fileUrl) {
+        throw new Error('データを取得できませんでした');
       }
 
       try {
-        const fileUrl = URL.createObjectURL(file);
         const loadingTask = pdfjsLib.getDocument(fileUrl);
         const pdf = await loadingTask.promise;
         const tempImages: string[] = [];
@@ -65,14 +68,12 @@ const PresentationPage = () => {
         }
 
         setImages(tempImages);
-        URL.revokeObjectURL(fileUrl);
       } catch (error) {
         console.error('Error loading PDF:', error);
       } finally {
         setLoading(false);
-      }
+      }    
     };
-
     loadPdf();
   }, [pdfId]);
 

@@ -14,27 +14,12 @@ services:
       - "3000:3000"
     networks:
       - app-network
-    
-  back:
-    container_name: back
-    build:
-      context: .
-      dockerfile: ./dockerfiles/back/Dockerfile
-    tty: true
-    volumes:
-      - ./back:/app
-    command: sh -c "go run main.go"
-    ports:
-      - "8080:8080"
-    depends_on:
-      # - db
-      - redis
 
   analyze:
     container_name: analyze
     build:
-      context: ./analyze
-      dockerfile: ./dockerfile_origin/Dockerfile
+      context: .
+      dockerfile: ./dockerfiles/analyze/Dockerfile
     tty: true
     volumes:
       - ./analyze/src:/app
@@ -45,28 +30,6 @@ services:
     command: sh -c "uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
     networks:
       - app-network
-
-  redis:
-    container_name: redis
-    image: redis:latest
-    ports:
-      - 6379:6379
-
-  yolo:
-    container_name: yolo
-    build:
-      context: .
-      dockerfile: ./dockerfiles/yolo/Dockerfile
-    volumes:
-      - ./yolo/:/usr/src/app
-    ports:
-      - "8000:8000"
-    networks:
-      - default
-
-volumes:
-  mysql-data:
-    name: gesture-presenter
   
 networks:
   app-network:

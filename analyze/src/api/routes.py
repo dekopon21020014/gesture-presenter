@@ -34,10 +34,11 @@ async def analyze_slide(
 
     pdf_data = await file.read()
     analyzer = SlideAnalyzer()    
-    compare_result = {}
+    comparison_result = {}
 
     if ref: # 比較用のスライドがあった場合
-        compare_result = await analyzer.compare(pdf_data, ref)
+        comparison_result = await analyzer.compare(pdf_data, ref)
+        comparison_feedback = analyzer.get_comparison_feedback(comparison_result)
         
     """Analyze a single slide from a PDF."""        
     
@@ -47,7 +48,8 @@ async def analyze_slide(
         content={
             "gemini_response": gemini_response,
             "font_analysis": font_analysis,
-            "compare_result": compare_result
+            "compare_result": comparison_result,
+            "comparison_feedback": comparison_feedback
         }
     )
 

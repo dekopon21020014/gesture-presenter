@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 
 let history: any[] = [];
 let currentPage = 1;
+let lastMotionTime: number;
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -88,15 +89,16 @@ export const useMediaPipe = (
     if (isPresenting) {
       switch(gestureLabelA) {
         case 'Open_Palm':
+          if (Date.now() - lastMotionTime < 3000) break;
           if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
             nextSlide();
             history = [...history, { [String(++currentPage)]: currentTime }]
-            console.log('next page: ', history);
+            lastMotionTime = currentTime;
           } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
             if (currentPage > 1) {
-             prevSlide();
+              prevSlide();
               history = [...history, { [String(--currentPage)]: currentTime }]
-              console.log('prev page: ', history);
+              lastMotionTime = currentTime;
             }
           } else if (gestureLabelB == 'Open_Palm') {
             Sorry();
@@ -134,7 +136,7 @@ export const useMediaPipe = (
             shutdownCount.current = 0;
             localStorage.setItem('facialIds', JSON.stringify(facialIds));
             history = [...history, { ['end']: currentTime }]
-            console.log('history = ', history)
+            console.log('history = ', history);
             // 履歴を JSON ファイルとしてダウンロード
             const downloadHistory = (data: any[], filename = 'history.json') => {
               const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -168,8 +170,10 @@ export const useMediaPipe = (
   }, [isPresenting, facialIds, nextSlide, prevSlide, Good, Sad, Clap, playGoodSound, playBadSound, playClapSound]);
 
   const renderLoop = useCallback(() => {
+    setTimeout(renderLoop, (1 / FRAME_RATE) * ONE_SEC_MS);
     const video = videoRef.current;
-    if (!video || !isModelReady || !streamReady) return;
+    if (!video || !isModelReady /*|| !streamReady*/) return;
+
     const currentTime = video.currentTime;
     if (currentTime !== lastVideoTimeRef.current) {
       try {
@@ -179,8 +183,7 @@ export const useMediaPipe = (
       } catch (error) {
         console.error("Error in render loop:", error);
       }
-    }
-    setTimeout(renderLoop, (1 / FRAME_RATE) * ONE_SEC_MS);
+    }    
   }, [streamReady, isModelReady, videoRef, processFrame]);
 
   const startRenderLoop = useCallback(() => {

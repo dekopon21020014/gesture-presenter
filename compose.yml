@@ -31,6 +31,14 @@ services:
     networks:
       - app-network
   
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    environment:  
+      - TOKEN=${TOKEN}
+    command: tunnel --no-autoupdate run --token ${TOKEN}
+    network_mode: "host"
+    restart: unless-stopped
+
 networks:
   app-network:
     driver: bridge

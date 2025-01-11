@@ -20,10 +20,12 @@ Make sure you have the following software installed on your machine:
 ### 1. Clone the repository
 
 ```bash
+
 git clone https://github.com/dekopon21020014/gesture-presenter.git
 cd gesture-presenter
 docker compose run -w /app --rm front npm install
-docker compose up
+docker compose up # in your development evviroment
+# docker compose -f compose.prod.yaml up # if you want to daploy using cloud flare tunnel
 ```
 
 ### apiのメモ

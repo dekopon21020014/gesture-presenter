@@ -6,8 +6,11 @@ import numpy as np
 import ffmpeg
 from fastapi import HTTPException
 from reazonspeech.nemo.asr import transcribe, audio_from_path
-from api.dependencies import gemini_model, speech_model
+from api.dependencies import gemini_model, speech_model, whisper_model
 from config.settings import settings
+from fastapi import File
+import tempfile
+import shutil
 
 class VoiceAnalyzer:
     @staticmethod
@@ -68,3 +71,19 @@ class VoiceAnalyzer:
         )
         response = gemini_model.generate_content(analysis_text)
         return response.text
+
+    async def transcribe(self, voice: File(...)) -> str:
+        # 音声ファイルを一時的に保存
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio_file:
+            temp_audio_path = temp_audio_file.name
+            await voice.seek(0)
+            shutil.copyfileobj(voice.file, temp_audio_file)
+
+        transcription = whisper_model.transcribe(
+            temp_audio_path, 
+            task="transcribe", 
+            language="Japanese"
+        )['text']
+
+        os.remove(temp_audio_path)
+        return transcription

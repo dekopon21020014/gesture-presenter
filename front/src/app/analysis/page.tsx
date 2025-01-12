@@ -23,7 +23,6 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 
-import { getPDFFromStore } from '../utils/pdfStore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
@@ -32,6 +31,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
 
 import AnalysisResult from './AnalysisResult';
+import { fetchPDF } from '../../app/utils/pdfStore';
 
 interface FontAnalysis {
   mean_size: number;
@@ -71,13 +71,23 @@ const AnalysisPage = () => {
 
   // ページ初回ロード時にPDFファイルを取得
   useEffect(() => {
-    const file = getPDFFromStore(pdfId);
-    setPdfFile(file);
-    setLoading(false);
+    const fetchAndSetPdfFile = async () => {
+      if (pdfId) {
+        try {
+          const file = await fetchPDF(pdfId);
+          setPdfFile(file);
+          if (file) {
+            setActiveStep(1);
+          }
+        } catch (error) {
+          console.error("Error in fetching the PDF:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
 
-    if (file) {
-      setActiveStep(1);
-    }
+    fetchAndSetPdfFile();
   }, [pdfId]);
 
   /**

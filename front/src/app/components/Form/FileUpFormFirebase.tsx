@@ -8,18 +8,20 @@ import {
   Typography,
   Alert
 } from '@mui/material';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadFile } from '@/app/firebase/form/uploadFile'
+import { addFileInfo } from '@/app/firebase/form/fileInfo'
+import { type StoredFileInfo } from '@/app/types/file-info.type'
+
+
 
 interface PDFUploaderProps {
-  onUploadSuccess: (fileUrl: string, fileName: string) => void;
-  userId: string; // Firebase認証のユーザーID
+  onUploadSuccess: (storedFileInfo: StoredFileInfo) => void;
 }
 
-export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess, userId }) => {
+export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -49,20 +51,20 @@ export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess, userI
     setError(null);
 
     try {
-      const storage = getStorage();
-      const fileId = Math.random().toString(36).substr(2, 9);
-      const timestamp = Date.now();
-      const filePath = `presentations/${userId}/${fileId}_${timestamp}_${file.name}`;
-      const storageRef = ref(storage, filePath);
+      const [filePath, downloadURL] = await uploadFile(file);
+      const fileData = {
+        fileName: file.name,
+        filePath: filePath,
+        downloadURL: downloadURL,
+      };
+      const storedFileInfo = await addFileInfo(fileData);
 
-      // Upload the file
-      const snapshot = await uploadBytes(storageRef, file);
-      
-      // Get the download URL
-      const downloadURL = await getDownloadURL(snapshot.ref);
+      if (storedFileInfo instanceof Error) {
+        console.error('Error adding file info:', storedFileInfo.message);
+        return;
+      }
 
-      // Call the success callback with the download URL
-      onUploadSuccess(downloadURL, file.name);
+      onUploadSuccess(storedFileInfo);
 
       // Reset the form
       if (fileInputRef.current) {

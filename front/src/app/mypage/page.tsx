@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Button,
+import { 
+  Button, 
   Box,
   Typography,
   Container,
@@ -21,67 +21,72 @@ import FileIcon from '@mui/icons-material/InsertDriveFile';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import PresentationIcon from '@mui/icons-material/Slideshow';
 import DeleteIcon from '@mui/icons-material/Delete';
-
-import FileUpFormLocal from '../components/Form/FileUpFormLocal';
-import { cleanupOldFiles } from '../utils/pdfStore';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
+import FileUpFormFirebase from '../components/Form/FileUpFormFirebase';
+import { type StoredFileInfo } from '@/app/types/file-info.type'
+import { saveFileInfoToLocalStorage, getAllFilesInfo, cleanupOldFiles, deleteFileInfo, deleteAllFilesInfo, deleteFromLocalStorage } from '@/app/utils/pdfStore'
+import { Timestamp } from 'firebase/firestore';
 
 interface UploadedFile {
   id: string;
   name: string;
-  timestamp: number;
+  timestamp: Timestamp;
 }
 
-const MyPage = () => {
+const MyPage = () => {    
   const router = useRouter();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [user, setUser] = useState<User | null>(null); 
+
+  // Firebase Authの監視
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      if (user) {
+        setUser(user); 
+      } else {
+        router.push("/login");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   // クリーンアップ関数の実行
   useEffect(() => {
-    const cleanup = () => {
-      cleanupOldFiles();
-      // UIの更新
-      if (window.pdfStore) {
-        const currentFiles = Object.entries(window.pdfStore).map(([id, data]) => ({
-          id,
-          name: (data as any).name,
-          timestamp: (data as any).timestamp
+    const cleanup = async () => {
+      cleanupOldFiles();  // localStorage内の古いファイルを削除
+      const fileInfo: StoredFileInfo[] | undefined = await getAllFilesInfo();
+      if (fileInfo) {
+        const currentFiles: UploadedFile[] = fileInfo.map((data) => ({
+          id: data.id,
+          name: data.fileName,
+          timestamp: data.createdAt 
         }));
+
         setUploadedFiles(currentFiles);
       }
     };
-
+  
     cleanup();
-    const interval = setInterval(cleanup, 5 * 60 * 1000); // 5分ごとにチェック
+    const interval = setInterval(cleanup, 5 * 60 * 1000); 
     return () => clearInterval(interval);
   }, []);
-
-  /** ローカルアップロード成功時の処理 */
-  const handleLocalUploadSuccess = (file: File) => {
-    const fileId = Math.random().toString(36).substr(2, 9);
-
-    if (window.pdfStore) {
-      window.pdfStore[fileId] = {
-        file,
-        name: file.name,
-        timestamp: Date.now()
-      };
-    }
-
-    setUploadedFiles((prev) => [
-      ...prev,
-      {
-        id: fileId,
-        name: file.name,
-        timestamp: Date.now()
-      }
-    ]);
+  
+  const handleLocalUploadSuccess = (storedFileInfo: StoredFileInfo) => {
+    saveFileInfoToLocalStorage(storedFileInfo)
+    const uploadedFile: UploadedFile = {
+      id: storedFileInfo.id,
+      name: storedFileInfo.fileName,
+      timestamp: storedFileInfo.createdAt 
+    };
+  
+    setUploadedFiles((prev: UploadedFile[]) => [...prev, uploadedFile]);
   };
 
   const handleDelete = (fileId: string) => {
-    if (window.pdfStore && window.pdfStore[fileId]) {
-      delete window.pdfStore[fileId];
-      setUploadedFiles((prev) => prev.filter((file) => file.id !== fileId));
-    }
+    deleteFileInfo(fileId)
+    setUploadedFiles((prev: UploadedFile[]) => prev.filter(file => file.id !== fileId));
   };
 
   const handleAnalyze = (fileId: string) => {
@@ -92,20 +97,21 @@ const MyPage = () => {
     router.push(`/presentation?pdf_id=${fileId}`);
   };
 
-  /** ログアウト */
   const handleLogout = async () => {
-    if (window.pdfStore) {
-      window.pdfStore = {};
-    }
+    deleteFromLocalStorage();
+    const auth = getAuth();
+    await auth.signOut();
     setUploadedFiles([]);
     router.push('/login');
   };
 
-  /** ホーム画面へ */
   const handleHomeClick = () => {
     router.push('/top');
   };
 
+  if (!user) {
+    return <>Loading...</>;
+  }
   return (
     <>
       {/* ====== ヘッダー部分 ====== */}
@@ -147,7 +153,7 @@ const MyPage = () => {
         </Box>
 
         {/* ファイルアップロードフォーム */}
-        <FileUpFormLocal onUploadSuccess={handleLocalUploadSuccess} />
+        <FileUpFormFirebase onUploadSuccess={handleLocalUploadSuccess} />
 
         {/* アップロード済みファイル一覧 */}
         <Paper elevation={3} sx={{ p: 3, mt: 4 }} component="section">
@@ -160,13 +166,13 @@ const MyPage = () => {
             </Typography>
           ) : (
             <List>
-              {uploadedFiles.map((file) => (
+              {uploadedFiles.map((file: UploadedFile) => (
                 <React.Fragment key={file.id}>
                   <ListItem>
                     <FileIcon sx={{ mr: 2 }} />
                     <ListItemText
                       primary={file.name}
-                      secondary={new Date(file.timestamp).toLocaleString()}
+                      secondary={new Date(file.timestamp.seconds*1000).toString()}
                     />
 
                     {/* secondaryAction ではなく、普通にBoxでまとめて配置 */}

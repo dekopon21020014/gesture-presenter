@@ -33,3 +33,14 @@ def analyze_font_metrics(font_sizes: list) -> dict:
         "std_size": stdev(font_sizes) if len(font_sizes) > 1 else 0,
         "size_variation": len(set(round(size) for size in font_sizes))
     }
+
+def get_text(pdf_data: bytes) -> dict:
+    doc = fitz.open(stream=pdf_data, filetype="pdf")
+    text = {}
+    try:
+        for i, page in enumerate(doc):
+            text[i] = page.get_text()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF解析エラー: {str(e)}")
+    
+    return text

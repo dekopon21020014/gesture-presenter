@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { 
   Button, 
   Box,
@@ -12,8 +11,9 @@ import {
   List,
   ListItem,
   ListItemText,
-  IconButton,
-  Divider
+  Divider,
+  AppBar,
+  Toolbar
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
@@ -21,6 +21,7 @@ import FileIcon from '@mui/icons-material/InsertDriveFile';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import PresentationIcon from '@mui/icons-material/Slideshow';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import FileUpFormFirebase from '../components/Form/FileUpFormFirebase';
 import { type StoredFileInfo } from '@/app/types/file-info.type'
 import { saveFileInfoToLocalStorage, getAllFilesInfo, cleanupOldFiles, deleteFileInfo, deleteAllFilesInfo, deleteFromLocalStorage } from '@/app/utils/pdfStore'
@@ -40,7 +41,7 @@ const MyPage = () => {
   // Firebase Authの監視
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
       if (user) {
         setUser(user); 
       } else {
@@ -80,20 +81,20 @@ const MyPage = () => {
       timestamp: storedFileInfo.createdAt 
     };
   
-    setUploadedFiles(prev => [...prev, uploadedFile]);
+    setUploadedFiles((prev: UploadedFile[]) => [...prev, uploadedFile]);
   };
 
   const handleDelete = (fileId: string) => {
     deleteFileInfo(fileId)
-    setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
+    setUploadedFiles((prev: UploadedFile[]) => prev.filter(file => file.id !== fileId));
   };
 
   const handleAnalyze = (fileId: string) => {
-    router.push(`/mypage/analysis?pdf_id=${fileId}`);
+    router.push(`/analysis?pdf_id=${fileId}`);
   };
 
   const handlePresent = (fileId: string) => {
-    router.push(`/mypage/presentation?pdf_id=${fileId}`);
+    router.push(`/presentation?pdf_id=${fileId}`);
   };
 
   const handleLogout = async () => {
@@ -109,103 +110,130 @@ const MyPage = () => {
   };
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <>Loading...</>;
   }
-
   return (
-        <Container maxWidth="md">
-          <Box component="main" sx={{ my: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom sx={{ 
+    <>
+      {/* ====== ヘッダー部分 ====== */}
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            マイページ
+          </Typography>
+          <Button
+            color="inherit"
+            onClick={handleLogout}
+            startIcon={<LogoutIcon />}
+            aria-label="Logout"
+          >
+            ログアウト
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      {/* ====== メインコンテンツ ====== */}
+      <Container maxWidth="md">
+        <Box component="main" sx={{ my: 4 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+            sx={{
               fontWeight: 'bold',
               textAlign: 'center'
-            }}>
-              マイページ
-            </Typography>
-            <Typography variant="body1" paragraph sx={{ textAlign: 'center' }}>
-              PDFファイルをアップロードして分析または発表を開始できます。
-              <br />
-              ※アップロードされたファイルは30分後に自動的に削除されます。
-            </Typography>
-          </Box>
+            }}
+          >
+            マイページ
+          </Typography>
+          <Typography variant="body1" paragraph sx={{ textAlign: 'center' }}>
+            PDFファイルをアップロードして分析または発表を開始できます。
+            <br />
+            ※アップロードされたファイルは30分後に自動的に削除されます。
+          </Typography>
+        </Box>
 
-          <FileUpFormFirebase onUploadSuccess={handleLocalUploadSuccess}/>
-          
-          <Paper elevation={3} sx={{ p: 3, mt: 4 }} component="section">
-            <Typography variant="h5" component="h2" gutterBottom>
-              アップロード済みファイル
-            </Typography>
-            {uploadedFiles.length === 0 ? (
-              <Typography color="text.secondary">
-                ファイルがアップロードされていません。
-              </Typography>
-            ) : (
-              <List>
-                {uploadedFiles.map((file) => (
-                  <React.Fragment key={file.id}>
-                    <ListItem
-                      secondaryAction={
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <IconButton 
-                            onClick={() => handleAnalyze(file.id)}
-                            aria-label="analyze"
-                            color="primary"
-                          >
-                            <AnalyticsIcon />
-                          </IconButton>
-                          <IconButton 
-                            onClick={() => handlePresent(file.id)}
-                            aria-label="present"
-                            color="secondary"
-                          >
-                            <PresentationIcon />
-                          </IconButton>
-                          <IconButton 
-                            onClick={() => handleDelete(file.id)}
-                            aria-label="delete"
-                            color="error"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-                      }
-                    >
-                      <FileIcon sx={{ mr: 2 }} />
-                      <ListItemText
-                        primary={file.name}
-                        secondary={new Date(file.timestamp.seconds*1000).toString()}
-                      />
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
-            )}
-          </Paper>
+        {/* ファイルアップロードフォーム */}
+        <FileUpFormFirebase onUploadSuccess={handleLocalUploadSuccess} />
 
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4, mb: 4 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleHomeClick}
-              startIcon={<HomeIcon />}
-              aria-label="Home"
-              sx={{ minWidth: 200, height: 60 }}
-            >
-              ホーム
-            </Button>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleLogout}
-              startIcon={<LogoutIcon />}
-              aria-label="Logout"
-              sx={{ minWidth: 200, height: 60 }}
-            >
-              ログアウト
-            </Button>
-          </Box>
-        </Container>
-    );
+        {/* アップロード済みファイル一覧 */}
+        <Paper elevation={3} sx={{ p: 3, mt: 4 }} component="section">
+          <Typography variant="h5" component="h2" gutterBottom>
+            アップロード済みファイル
+          </Typography>
+          {uploadedFiles.length === 0 ? (
+            <Typography color="text.secondary">
+              ファイルがアップロードされていません。
+            </Typography>
+          ) : (
+            <List>
+              {uploadedFiles.map((file: UploadedFile) => (
+                <React.Fragment key={file.id}>
+                  <ListItem>
+                    <FileIcon sx={{ mr: 2 }} />
+                    <ListItemText
+                      primary={file.name}
+                      secondary={new Date(file.timestamp.seconds*1000).toString()}
+                    />
+
+                    {/* secondaryAction ではなく、普通にBoxでまとめて配置 */}
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<AnalyticsIcon />}
+                        onClick={() => handleAnalyze(file.id)}
+                      >
+                        分析
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={<PresentationIcon />}
+                        onClick={() => handlePresent(file.id)}
+                      >
+                        発表
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(file.id)}
+                      >
+                        削除
+                      </Button>
+                    </Box>
+                  </ListItem>
+                  <Divider />
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </Paper>
+
+        {/* ホームへ戻るボタン */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 2,
+            mt: 4,
+            mb: 4
+          }}
+        >
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleHomeClick}
+            startIcon={<HomeIcon />}
+            aria-label="Home"
+            sx={{ minWidth: 200, height: 60 }}
+          >
+            ホーム
+          </Button>
+        </Box>
+      </Container>
+    </>
+  );
 };
 
 export default MyPage;

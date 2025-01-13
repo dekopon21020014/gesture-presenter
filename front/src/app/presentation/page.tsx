@@ -7,7 +7,7 @@ import { Navigation, Pagination } from 'swiper/modules';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
-import { getPDFFromStore } from '../utils/pdfStore';
+import { getFileUrl } from '../../app/utils/pdfStore';
 import { Mediapipe } from '../components/Detection/Mediapipe';
 import { Effects } from '../components/Effects/Effects';
 import { Sounds } from '../components/Sounds/Sounds';
@@ -45,15 +45,14 @@ const PresentationPage = () => {
         return;
       }
 
-      const file = getPDFFromStore(pdfId);
-      if (!file) {
+      const fileUrl = await getFileUrl(pdfId);
+      if (!fileUrl) {
         console.error('PDF file not found in the store.');
         setLoading(false);
         return;
       }
 
       try {
-        const fileUrl = URL.createObjectURL(file);
         const loadingTask = pdfjsLib.getDocument(fileUrl);
         const pdf = await loadingTask.promise;
         const tempImages: string[] = [];
@@ -75,14 +74,12 @@ const PresentationPage = () => {
         }
 
         setImages(tempImages);
-        URL.revokeObjectURL(fileUrl);
       } catch (error) {
         console.error('Error loading PDF:', error);
       } finally {
         setLoading(false);
-      }
+      }    
     };
-
     loadPdf();
   }, [pdfId]);
 

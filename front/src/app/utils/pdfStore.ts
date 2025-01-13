@@ -12,24 +12,11 @@ export function saveFileInfoToLocalStorage(fileInfo: StoredFileInfo) {
 
 // 全てのファイル情報を取得する関数
 export const getAllFilesInfo = async (): Promise<StoredFileInfo[] | undefined> => {
-  const files: StoredFileInfo[] = [];
-
-  if (localStorage.length !== 0) {
-    for (let key in localStorage) {
-      const fileInfo = getStoredFileInfoFromLocalStorage(key);
-      if (fileInfo) {
-        files.push(fileInfo); 
-      }
-    }
-    return files
-  } else {
-    // localStorageにデータがない場合はFirebase Storeからデータを取得
-    const firebaseFiles: StoredFileInfo[] = await getAllFilesInfoFromFirebase();
-    for (let i = 0; i < firebaseFiles.length; i++) {
-      saveFileInfoToLocalStorage(firebaseFiles[i]);
-    }
-    return firebaseFiles;
+  const firebaseFiles: StoredFileInfo[] = await getAllFilesInfoFromFirebase();
+  for (let i = 0; i < firebaseFiles.length; i++) {
+    saveFileInfoToLocalStorage(firebaseFiles[i]);
   }
+  return firebaseFiles;
 }
 
 export const getFileInfo = async (fileId: string): Promise<StoredFileInfo | null> => {

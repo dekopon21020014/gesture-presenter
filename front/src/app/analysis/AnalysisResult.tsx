@@ -73,10 +73,10 @@ const CATEGORY_LABELS = {
 };
 
 const AnalysisResult = ({
-  geminiResponse,   // 単一のフィードバックを受け取る
+  geminiResponse,
   fontAnalysis,
   comparisonData,
-  targetFileName,
+  comparison_feedback,
   referenceFiles = []
 }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -356,30 +356,16 @@ const AnalysisResult = ({
                   <CompareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
                   比較分析のポイント
                 </Typography>
-                <Box component="ul" sx={{ mt: 2, pl: 2 }}>
-                  {comparisonData.current.content_distribution && Object.entries(comparisonData.current.content_distribution).map(
-                    ([category, value]) => {
-                      const avgValue = comparisonData.reference_avg[category];
-                      const diff = Math.abs(value - avgValue);
-                      if (diff > 0.2) {
-                        return (
-                          <Typography component="li" key={category} sx={{ mb: 1 }}>
-                            {`${CATEGORY_LABELS[category]}の割合が参照平均と${(
-                              diff * 100
-                            ).toFixed(1)}%
-                            ${value > avgValue ? '多く' : '少なく'}なっています。
-                            ${
-                              value < avgValue
-                                ? '増やすことを'
-                                : '削減を'
-                            }検討してください。`}
-                          </Typography>
-                        );
-                      }
-                      return null;
-                    }
-                  )}
-                </Box>
+                  <Box sx={{ mt: 2, pl: 2 }}>
+                    {comparison_feedback && (
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: 'pre-line' }}
+                      >
+                        {comparison_feedback}
+                      </Typography>
+                    )}
+                  </Box>
               </Paper>
             </Grid>
           </Grid>

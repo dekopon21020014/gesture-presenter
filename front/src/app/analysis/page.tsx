@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { 
-  Container, 
-  Typography, 
-  Paper, 
-  Box, 
+import {
+  Container,
+  Typography,
+  Paper,
+  Box,
   CircularProgress,
   Button,
   List,
@@ -48,6 +48,8 @@ interface AnalysisData {
       comparison_notes: string;
     };
   };
+  comparison_feedback?: string;
+  referenceFiles: [];
 }
 
 interface ReferenceFile {
@@ -319,8 +321,8 @@ const AnalysisPage = () => {
 
             {/* エラー表示 */}
             {error && (
-              <Alert 
-                severity="error" 
+              <Alert
+                severity="error"
                 sx={{ mb: 4 }}
                 onClose={() => setError(null)}
               >
@@ -336,6 +338,7 @@ const AnalysisPage = () => {
                     geminiResponse={analysisData.gemini_response}
                     fontAnalysis={analysisData.font_analysis}
                     comparisonData={analysisData.compare_result}
+                    comparison_feedback={analysisData.comparison_feedback}
                     referenceFiles={referenceFiles}
                   />
                 </Box>

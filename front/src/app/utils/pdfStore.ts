@@ -88,16 +88,17 @@ export const deleteAllFilesInfo = async (): Promise<void> => {
 
 // URLからファイルを読み込み
 export const fetchPDF = async (fileId: string): Promise<File | null> => {
-  const fileUrl = await getFileUrl(fileId)
+  const fileInfo = await getFileInfo(fileId);
 
-  if (!fileUrl) return null;
+
+  if (!fileInfo?.fileUrl) return null;
 
   try {
-    const response = await fetch(fileUrl);
+    const response = await fetch(fileInfo.fileUrl);
     if (!response.ok) throw new Error(`Failed to fetch file from URL: ${fileUrl}`);
 
     const blob = await response.blob();
-    return new File([blob], "filename", { type: blob.type });
+    return new File([blob], fileInfo.fileName, { type: blob.type });
   } catch (error) {
     console.error("Error fetching file:", error);
     return null; 

@@ -3,6 +3,7 @@ import firebase_app from "../../../../firebase-config";
 import { getFirestore, collection, getDoc, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"; 
 import { getUserUid } from "../utils/auth"
 import { type StoredFileInfo } from '@/app/types/file-info.type'
+import { Contrail_One } from "next/font/google";
 
 type CreateFileData = {
   fileName: string;
@@ -63,8 +64,12 @@ export async function getAllFilesInfoFromFirebase(): Promise<StoredFileInfo[]> {
     const files: StoredFileInfo[] = [];
     
     querySnapshot.forEach((doc) => {
-      const data = doc.data() as StoredFileInfo;
-      files.push(data);
+      const data = doc.data() as Omit<StoredFileInfo, 'id'>;
+      const storedFileInfo: StoredFileInfo = {
+        id: doc.id,
+        ...data,
+      };
+      files.push(storedFileInfo);
     });
 
     return files;

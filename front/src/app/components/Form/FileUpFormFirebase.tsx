@@ -12,8 +12,6 @@ import { uploadFile } from '@/app/firebase/form/uploadFile'
 import { addFileInfo } from '@/app/firebase/form/fileInfo'
 import { type StoredFileInfo } from '@/app/types/file-info.type'
 
-
-
 interface PDFUploaderProps {
   onUploadSuccess: (storedFileInfo: StoredFileInfo) => void;
 }

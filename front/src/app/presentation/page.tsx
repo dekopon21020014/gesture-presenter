@@ -7,10 +7,10 @@ import { Navigation, Pagination } from 'swiper/modules';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import * as pdfjsLib from 'pdfjs-dist';
 import 'pdfjs-dist/build/pdf.worker.min.mjs';
-import { getFileUrl } from '../../app/utils/pdfStore';
 import { Mediapipe } from '../components/Detection/Mediapipe';
 import { Effects } from '../components/Effects/Effects';
 import { Sounds } from '../components/Sounds/Sounds';
+import { getUrlAndName } from "@/app/firebase/form/fileInfo"
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -45,7 +45,7 @@ const PresentationPage = () => {
         return;
       }
 
-      const fileUrl = await getFileUrl(pdfId);
+      const [fileUrl, _] = await getUrlAndName(pdfId);
       if (!fileUrl) {
         console.error('PDF file not found in the store.');
         setLoading(false);

@@ -1,9 +1,8 @@
 'use client'
-import firebase_app from "../../../../firebase-config";
+import firebase_app from "@/../firebase-config";
 import { getFirestore, collection, getDoc, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"; 
-import { getUserUid } from "../utils/auth"
-import { type StoredFileInfo } from '@/app/types/file-info.type'
-import { Contrail_One } from "next/font/google";
+import { getUserUid } from "@/app/firebase/utils/auth";
+import { type StoredFileInfo } from '@/app/types/file-info.type';
 
 type CreateFileData = {
   fileName: string;
@@ -45,7 +44,7 @@ export async function addFileInfo({ fileName, filePath, downloadURL }: CreateFil
 
 export async function addAdvice(fileId: string, advice: string): Promise<void> {
   try {
-    const uid = await getUserUid()
+    const uid = await getUserUid();
     const fileDocRef = doc(db, "users", uid, "files", fileId);
     await updateDoc(fileDocRef, {
       advice: advice,
@@ -85,6 +84,48 @@ export async function deleteFileInfoFromFirebase(fileId: string) {
   
   if (fileDocRef) {
     await deleteDoc(fileDocRef);
+  }  
+}
+
+export async function getUrlAndName(fileId: string): Promise<[string | null, string | null]> {
+  try {
+    const uid = await getUserUid(); 
+    const fileDocRef = doc(db, "users", uid, "files", fileId); // ドキュメント参照を取得
+    const fileDocSnap = await getDoc(fileDocRef); // ドキュメントを取得
+    const fileData = fileDocSnap.data();
+
+    if (fileData) {
+      return [fileData.fileUrl || null, fileData.fileName || null]
+    } else {
+      console.warn("No such file document!");
+      return [null, null];
+    }
+  } catch (error) {
+    console.error("Error fetching file info:", error);
+    return [null, null];    
   }
-  
+}
+
+export async function getFileFromStoage(fileId: string): Promise<File | null> {
+  try {
+    const [url, name] = await getUrlAndName(fileId);
+    if (!url) return null;
+
+    // ダウンロードURLからPDFファイルを取得
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.statusText}`);
+    }
+
+    // レスポンスを Blob に変換
+    const blob = await response.blob();
+
+    // Blob を File に変換して返却
+    const fileName = name || "downloaded.pdf"; // ファイル名を取得（デフォルトは downloaded.pdf）
+    const file = new File([blob], fileName, { type: "application/pdf" });
+    return file;
+  } catch (error) {
+    console.error("Error fetching PDF file:", error);
+    throw error;
+  }
 }

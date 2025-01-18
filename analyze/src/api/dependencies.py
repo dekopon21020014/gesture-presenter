@@ -2,6 +2,7 @@
 
 import google.generativeai as genai
 from reazonspeech.nemo.asr import load_model
+import whisper
 from config.settings import settings
 import os
 
@@ -24,8 +25,11 @@ def init_speech_model():
     # TEMP_DIR を作成
     os.makedirs(settings.TEMP_DIR, exist_ok=True)
 
+    speech_model = load_model(device=device)
+    whisper_model = whisper.load_model("large").to(device)
+
     # モデルをロード
-    return load_model(device=device)
+    return speech_model, whisper_model
 
 gemini_model = init_gemini()
-speech_model = init_speech_model()
+speech_model, whisper_model = init_speech_model()

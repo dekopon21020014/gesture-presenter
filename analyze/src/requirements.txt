@@ -40,3 +40,4 @@ python-multipart
 ffmpeg-python
 openai 
 fitz
+git+https://github.com/openai/whisper.git

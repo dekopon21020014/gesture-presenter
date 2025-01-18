@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 import shutil
 from services.voice_analyzer import VoiceAnalyzer
 from services.slide_analyzer import SlideAnalyzer
+from utils.pdf_utils import get_text
 from config.settings import settings
 from typing import List, Optional
 
@@ -33,7 +34,7 @@ async def analyze_slide(
         raise HTTPException(status_code=400, detail="PDFファイルをアップロードしてください。")
 
     pdf_data = await file.read()
-    analyzer = SlideAnalyzer()    
+    analyzer = SlideAnalyzer()
     comparison_result = {}
     comparison_feedback = ""
 
@@ -54,6 +55,17 @@ async def analyze_slide(
         }
     )
 
+@router.post("/transcribe")
+async def analyze_presentation(voice: UploadFile = File(...)):
+    analyzer = VoiceAnalyzer()
+    transcription = await analyzer.transcribe(voice)    
+    return {"transcription": transcription}
+
+@router.post("/get-text")
+async def analyze_presentation(file: UploadFile = File(...)):    
+    pdf_data = await file.read()
+    return get_text(pdf_data)
+    
 @router.get("/")
 def read_root():
     """Root endpoint."""

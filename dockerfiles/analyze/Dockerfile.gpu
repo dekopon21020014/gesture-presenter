@@ -2,7 +2,7 @@
 FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
 
 # 作業ディレクトリを設定
-WORKDIR /
+WORKDIR /app
 
 # タイムゾーンを設定
 ENV TZ=Asia/Tokyo
@@ -37,7 +37,7 @@ RUN ln -sf /usr/bin/python3.11 /usr/bin/python3 && \
     ln -sf /usr/local/bin/pip /usr/bin/pip3
 
 # Python の依存関係をインストール
-COPY ./src/requirements.txt .
+COPY ./analyze/src/requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt && \
     pip3 uninstall -y pymupdf && \
     pip3 install pymupdf
@@ -50,12 +50,6 @@ RUN pip3 install ./ReazonSpeech/pkg/nemo-asr
 
 # 環境変数を設定 (PYTHONPATH を更新)
 ENV PYTHONPATH=/app
-
-# アプリケーション用の作業ディレクトリ
-WORKDIR /app
-
-# アプリケーションコードをコピー
-COPY ./src /app
 
 # ポートを公開
 EXPOSE 8001

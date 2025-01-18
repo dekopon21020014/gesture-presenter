@@ -1,5 +1,5 @@
 import { type StoredFileInfo } from "@/app/types/file-info.type"
-import { deleteFileInfoFromFirebase, getAllFilesInfoFromFirebase } from "@/app/firebase/form/fileInfo"
+import { deleteFileInfoFromFirebase, getAllFilesInfoFromFirebase, getFileFromStoage, getUrlAndName } from "@/app/firebase/form/fileInfo"
 import { deleteFileFromFirebase } from "@/app/firebase/form/uploadFile"
 
 export function saveFileInfoToLocalStorage(fileInfo: StoredFileInfo) {
@@ -13,9 +13,6 @@ export function saveFileInfoToLocalStorage(fileInfo: StoredFileInfo) {
 // 全てのファイル情報を取得する関数
 export const getAllFilesInfo = async (): Promise<StoredFileInfo[] | undefined> => {
   const firebaseFiles: StoredFileInfo[] = await getAllFilesInfoFromFirebase();
-  for (let i = 0; i < firebaseFiles.length; i++) {
-    saveFileInfoToLocalStorage(firebaseFiles[i]);
-  }
   return firebaseFiles;
 }
 
@@ -33,7 +30,6 @@ export const getFileUrl = async (fileId: string): Promise<string | null> => {
   const fileInfo = await getFileInfo(fileId);
 
   // 値は正規表現で検証、攻撃者の指定したファイルは読み込めないように
-
   if (!fileInfo || !fileInfo.fileUrl) {
     console.error("No download URL found for the file.");
     return null;
@@ -85,20 +81,11 @@ export const deleteAllFilesInfo = async (): Promise<void> => {
   }
 };
 
-
 // URLからファイルを読み込み
 export const fetchPDF = async (fileId: string): Promise<File | null> => {
-  const fileInfo = await getFileInfo(fileId);
-
-
-  if (!fileInfo?.fileUrl) return null;
-
   try {
-    const response = await fetch(fileInfo.fileUrl);
-    if (!response.ok) throw new Error(`Failed to fetch file from URL: ${fileUrl}`);
-
-    const blob = await response.blob();
-    return new File([blob], fileInfo.fileName, { type: blob.type });
+    const file = await getFileFromStoage(fileId);
+    return file;
   } catch (error) {
     console.error("Error fetching file:", error);
     return null; 
@@ -122,8 +109,6 @@ export const cleanupOldFiles = () => {
   }
 };
 
-
-
 const getStoredFileInfoFromLocalStorage = (key: string): StoredFileInfo | null => {
   const fileInfo = localStorage.getItem(key);
 
@@ -144,4 +129,3 @@ const getStoredFileInfoFromLocalStorage = (key: string): StoredFileInfo | null =
   }
   return null;
 };
-

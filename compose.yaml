@@ -30,15 +30,7 @@ services:
     command: sh -c "uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
     networks:
       - app-network
-  
-  tunnel:
-    image: cloudflare/cloudflared:latest
-    environment:  
-      - TOKEN=${TOKEN}
-    command: tunnel --no-autoupdate run --token ${TOKEN}
-    network_mode: "host"
-    restart: unless-stopped
-
+      
 networks:
   app-network:
     driver: bridge

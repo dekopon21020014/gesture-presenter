@@ -1,0 +1,45 @@
+services:
+  front:
+    container_name: front
+    build:
+      context: .
+      dockerfile: ./dockerfiles/front/Dockerfile
+    tty: true
+    volumes:
+      - ./front:/app
+    environment:
+      - WATCHPACK_POLLING=true
+    command: sh -c "npm run dev"
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+
+  analyze:
+    container_name: analyze
+    build:
+      context: .
+      dockerfile: ./dockerfiles/analyze/Dockerfile
+    tty: true
+    volumes:
+      - ./analyze/src:/app
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONPATH=/app
+    command: sh -c "uvicorn main:app --host 0.0.0.0 --port 8001 --reload"
+    networks:
+      - app-network
+  
+  tunnel:
+    container_name: tunnel
+    image: cloudflare/cloudflared:latest
+    environment:  
+      - TOKEN=${TOKEN}
+    command: tunnel --no-autoupdate run --token ${TOKEN}
+    network_mode: "host"
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge

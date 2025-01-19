@@ -10,10 +10,13 @@ import { Happy } from "../Effects/Happy";
 import { Sorry } from "../Effects/sorry";
 import { playBadSound, playClapSound, playGoodSound, playHappySound, playSorrySound } from "../Sounds/Sounds";
 import { useRouter } from "next/navigation";
+//import { useWhisperHook } from "./useWhisper";
+import { useWhisperHook } from "./useWhisperHook"
 
 let history: any[] = [];
 let currentPage = 1;
-let lastMotionTime: number;
+let prevPage = 1;
+let lastMotionTime: number = Date.now();
 
 export const useMediaPipe = (
   videoRef: React.RefObject<HTMLVideoElement>,
@@ -34,12 +37,15 @@ export const useMediaPipe = (
   const startCount = useRef(0);
   const shutdownCount = useRef(0);
   const router = useRouter();
+  const { startRecording, stopRecording, audioFile } = useWhisperHook();
 
   const initializeTasks = useCallback(async () => {
     try {
       poseLandmarkerRef.current = await setupPoseLandmarker();
       gestureRecognizerRef.current = await setupGestureRecognizer();
       setIsModelReady(true);
+      currentPage = 1;
+      prevPage = 1;
     } catch (error) {
       console.error("Failed to initialize MediaPipe tasks:", error);
     }
@@ -82,6 +88,7 @@ export const useMediaPipe = (
       if (startCount.current == 5 && !isPresenting ) {
         setIsPresenting(true);
         history = [...history, { ['begin']: currentTime }]
+        startRecording();
       } else {
         startCount.current++;
       }
@@ -91,13 +98,17 @@ export const useMediaPipe = (
         case 'Open_Palm':
           if (Date.now() - lastMotionTime < 3000) break;
           if (isHandAboveShoulder('right') && !isHandAboveShoulder('left')) {
-            nextSlide();
+            stopRecording(currentPage);
+            nextSlide();            
             history = [...history, { [String(++currentPage)]: currentTime }]
+            startRecording();
             lastMotionTime = currentTime;
           } else if (isHandAboveShoulder('left') && !isHandAboveShoulder('right')) {
             if (currentPage > 1) {
-              prevSlide();
+              stopRecording(currentPage);
+              prevSlide();              
               history = [...history, { [String(--currentPage)]: currentTime }]
+              startRecording();
               lastMotionTime = currentTime;
             }
           } else if (gestureLabelB == 'Open_Palm') {
@@ -132,23 +143,28 @@ export const useMediaPipe = (
           break;
         case 'ILoveYou':
           if (shutdownCount.current > 3) {
+            // currentPage++;
             setIsPresenting(false);
             shutdownCount.current = 0;
-            localStorage.setItem('facialIds', JSON.stringify(facialIds));
+            stopRecording(currentPage);
+            startRecording();
+            const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+            sleep(3000).then(() => {
+              stopRecording(currentPage+1);
+            });  
+            stopRecording(currentPage+1);
             history = [...history, { ['end']: currentTime }]
-            console.log('history = ', history);
             // 履歴を JSON ファイルとしてダウンロード
-            const downloadHistory = (data: any[], filename = 'history.json') => {
-              const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = filename;
-              a.click();
-              URL.revokeObjectURL(url); // メモリを解放
-            };
-
-            downloadHistory(history);
+            // const downloadHistory = (data: any[], filename = 'history.json') => {
+            //   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            //   const url = URL.createObjectURL(blob);
+            //   const a = document.createElement('a');
+            //   a.href = url;
+            //   a.download = filename;
+            //   a.click();
+            //   URL.revokeObjectURL(url); // メモリを解放
+            // };
+            // downloadHistory(history);
 
             router.push('/mypage');
           } else {

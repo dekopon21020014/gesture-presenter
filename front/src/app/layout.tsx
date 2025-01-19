@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
+import "ginga-ui/style.css";
+import "ginga-ui/variables.css";
 
 const montserrat = Montserrat({ subsets: ["latin"] });
 

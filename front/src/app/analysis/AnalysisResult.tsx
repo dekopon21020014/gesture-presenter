@@ -1,36 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
   Paper,
   Box,
   Divider,
-  Rating,
   Chip,
   Alert,
   Table,
   TableBody,
   TableCell,
   TableRow,
-  Button,
   Tabs,
   Tab,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Grid
 } from '@mui/material';
 
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import WarningIcon from '@mui/icons-material/Warning';
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import PrintIcon from '@mui/icons-material/Print';
 import CompareIcon from '@mui/icons-material/Compare';
 import DescriptionIcon from '@mui/icons-material/Description';
 import FormatSizeIcon from '@mui/icons-material/FormatSize';
 import MessageIcon from '@mui/icons-material/Message';
-import FolderIcon from '@mui/icons-material/Folder';
 
 import {
   RadarChart,
@@ -48,6 +39,9 @@ import {
   Tooltip
 } from 'recharts';
 
+import { Button } from 'ginga-ui/core'; // Ginga UIのButtonをインポート
+import ThemeClient from 'ginga-ui/ai'; // ThemeClientをインポート
+
 /** タブパネルコンポーネント */
 const TabPanel = ({ children, value, index, ...other }) => (
   <div
@@ -61,6 +55,14 @@ const TabPanel = ({ children, value, index, ...other }) => (
   </div>
 );
 
+/** CSS変数オブジェクトをCSS文字列に変換する関数 */
+const convertCSSVariablesToString = (variables) => {
+  const cssVariables = Object.entries(variables)
+    .map(([key, value]) => `${key}: ${value};`)
+    .join(' ');
+  return `:root { ${cssVariables} }`;
+};
+
 /** カテゴリのラベル定義 */
 const CATEGORY_LABELS = {
   technical: '技術的な説明',
@@ -71,13 +73,39 @@ const CATEGORY_LABELS = {
 };
 
 const AnalysisResult = ({
-  geminiResponse,   // 単一のフィードバックを受け取る
+  geminiResponse,
   fontAnalysis,
   comparisonData,
-  targetFileName,
+  comparison_feedback,
   referenceFiles = []
 }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [themeCSS, setThemeCSS] = useState('');
+
+  // ThemeClientの初期化
+  const themeClient = new ThemeClient({
+    clientType: 'openai',
+    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+    dangerouslyAllowBrowser: true, // クライアントサイドでの使用を許可
+  });
+
+  // テーマ生成関数
+  const generateTheme = async () => {
+    try {
+      const response = await themeClient.generateTheme('PDF分析レポートのテーマ');
+      const { CSSCode } = response;
+      const cssString = convertCSSVariablesToString(CSSCode);
+      setThemeCSS(cssString);
+    } catch (error) {
+      console.error('テーマ生成エラー:', error);
+      // 必要に応じてユーザーにエラーメッセージを表示
+    }
+  };
+
+  // コンポーネントのマウント時にテーマを生成
+  useEffect(() => {
+    generateTheme();
+  }, []);
 
   /**
    * 基本分析タブで表示する項目。
@@ -160,6 +188,9 @@ const AnalysisResult = ({
 
   return (
     <Container maxWidth="lg">
+      {/* 生成されたテーマを適用 */}
+      {themeCSS && <style>{themeCSS}</style>}
+
       {/* タイトル */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h2" gutterBottom>
@@ -189,7 +220,7 @@ const AnalysisResult = ({
           {sections.map((section, index) => (
             <Grid item xs={12} key={index}>
               <Paper elevation={3} sx={{ p: 3 }}>
-                {/* タイトルとレーティング */}
+                {/* タイトルとアイコン */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   {section.icon && (
                     <section.icon sx={{ mr: 1, color: 'primary.main' }} />
@@ -325,47 +356,31 @@ const AnalysisResult = ({
                   <CompareIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
                   比較分析のポイント
                 </Typography>
-                <Box component="ul" sx={{ mt: 2, pl: 2 }}>
-                  {comparisonData && Object.keys(comparisonData).length > 0 && Object.entries(comparisonData.current.content_distribution).map(
-                    ([category, value]) => {
-                      const avgValue = comparisonData.reference_avg[category];
-                      const diff = Math.abs(value - avgValue);
-                      if (diff > 0.2) {
-                        return (
-                          <Typography component="li" key={category} sx={{ mb: 1 }}>
-                            {`${CATEGORY_LABELS[category]}の割合が参照平均と${(
-                              diff * 100
-                            ).toFixed(1)}%
-                            ${value > avgValue ? '多く' : '少なく'}なっています。
-                            ${
-                              value < avgValue
-                                ? '増やすことを'
-                                : '削減を'
-                            }検討してください。`}
-                          </Typography>
-                        );
-                      }
-                      return null;
-                    }
-                  )}
-                </Box>
+                <Box sx={{ mt: 2, pl: 2 }}>
+                    {comparison_feedback && (
+                      <Typography
+                        variant="body1"
+                        sx={{ whiteSpace: 'pre-line' }}
+                      >
+                        {comparison_feedback}
+                      </Typography>
+                    )}
+                  </Box>
               </Paper>
             </Grid>
           </Grid>
         </TabPanel>
-      ):
-      <Alert severity="info">
-        さらに参考にしたいPDFをアップロード (最大5個) すると、
-        近づけられるように様々な視点からアドバイスを得られます！
-        比較用ファイルをアップロードして再分析ボタンを押してください。
-      </Alert>
-    }
+      ) : (
+        <Alert severity="info">
+          さらに参考にしたいPDFをアップロード (最大5個) すると、
+          近づけられるように様々な視点からアドバイスを得られます！
+          比較用ファイルをアップロードして再分析ボタンを押してください。
+        </Alert>
+      )}
 
       {/* レポート印刷ボタン */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <Button
-          variant="outlined"
-          color="primary"
           onClick={() => window.print()}
           startIcon={<PrintIcon />}
         >

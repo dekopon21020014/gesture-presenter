@@ -1,6 +1,6 @@
 'use client'
 import firebase_app from "@/../firebase-config";
-import { getFirestore, collection, getDoc, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"; 
+import { getFirestore, collection, getDoc, getDocs, setDoc, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore"; 
 import { getUserUid } from "@/app/firebase/utils/auth";
 import { type StoredFileInfo } from '@/app/types/file-info.type';
 
@@ -127,5 +127,36 @@ export async function getFileFromStoage(fileId: string): Promise<File | null> {
   } catch (error) {
     console.error("Error fetching PDF file:", error);
     throw error;
+  }
+}
+
+export async function addTranscription(
+  pdf_id: string,
+  page: string,
+  transcription: string,  
+) {
+  try {
+    const uid = await getUserUid();
+    const docRef = doc(
+      db, 
+      "users", uid, 
+      "files", pdf_id,
+      "transcription", page
+    ); 
+
+    await setDoc(docRef, {
+      text: transcription,
+      createdAt: serverTimestamp()
+    })
+    const fileDocSnap = await getDoc(docRef);
+
+    if (fileDocSnap.exists()) {
+      return "success"; // 本当ならここで意味のある値を返す
+    } else {
+      return new Error("No such document!");
+    }
+  } catch (e: any) {
+    console.error("Error adding file document: ", e);
+    return new Error("Failed to add file: " + e.message);
   }
 }

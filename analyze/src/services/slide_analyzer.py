@@ -121,7 +121,7 @@ class SlideAnalyzer:
         prompt = load_prompt(
             "analyze_section.txt",
             text=text
-        )        
+        )
         try:
             response = gemini_model.generate_content(prompt)
             result = {}
@@ -144,11 +144,11 @@ class SlideAnalyzer:
         )
 
         try:
-            response = gemini_model.generate_content(prompt)            
+            response = gemini_model.generate_content(prompt)
             result = {}
             for line in response.text.strip().split('\n'):
                 feature, value = line.split(':')
-                result[feature.strip()] = value.strip().lower() == 'true'        
+                result[feature.strip()] = value.strip().lower() == 'true' 
             return result
 
         except Exception as e:

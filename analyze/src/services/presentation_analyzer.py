@@ -15,7 +15,6 @@ class PresentationAnalyzer:
                 transcription=content.transcription,
                 slide=content.slide
             )
-            print("prompt = ", prompt)
             response = gemini_model.generate_content(prompt)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error processing page {page}: {str(e)}")

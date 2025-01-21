@@ -72,13 +72,29 @@ const CATEGORY_LABELS = {
   conclusion: 'まとめ'
 };
 
-const AnalysisResult = ({
+interface AnalysisResultProps {
+  geminiResponse: string | null;
+  fontAnalysis: FontAnalysis | null;
+  comparisonData?: {
+    [key: string]: {
+      similarity_score: number;
+      comparison_notes: string;
+    };
+  } | null;
+  comparison_feedback?: string| null;
+  referenceFiles: ReferenceFile[]| null;
+  extractedText?: string | null; // 追加
+}
+
+const AnalysisResult: React.FC<AnalysisResultProps> = ({
   geminiResponse,
   fontAnalysis,
   comparisonData,
   comparison_feedback,
-  referenceFiles = []
+  referenceFiles = [],
+  extractedText // 追加
 }) => {
+  console.log(extractedText)
   const [activeTab, setActiveTab] = useState(0);
   const [themeCSS, setThemeCSS] = useState('');
 
@@ -105,6 +121,7 @@ const AnalysisResult = ({
   // コンポーネントのマウント時にテーマを生成
   useEffect(() => {
     generateTheme();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -210,7 +227,13 @@ const AnalysisResult = ({
         >
           <Tab icon={<AutoGraphIcon />} label="基本分析" />
           {/* comparisonData がある場合のみ「比較分析」タブを表示 */}
-          {comparisonData && <Tab icon={<CompareIcon />} label="比較分析" />}
+          {comparisonData && Object.keys(comparisonData).length > 0 && (
+            <Tab icon={<CompareIcon />} label="比較分析" />
+          )}
+          {/* extractedText が存在する場合のみ「プレゼン分析」タブを表示 */}
+          {extractedText && (
+            <Tab icon={<DescriptionIcon />} label="プレゼン分析" />
+          )}
         </Tabs>
       </Box>
 
@@ -271,7 +294,7 @@ const AnalysisResult = ({
       </TabPanel>
 
       {/* 比較分析タブ（comparisonData があれば表示） */}
-      {comparisonData && Object.keys(comparisonData).length > 0 ? (
+      {comparisonData && Object.keys(comparisonData).length > 0 && (
         <TabPanel value={activeTab} index={1}>
           <Grid container spacing={3}>
             {/* 構造分析比較 */}
@@ -357,26 +380,77 @@ const AnalysisResult = ({
                   比較分析のポイント
                 </Typography>
                 <Box sx={{ mt: 2, pl: 2 }}>
-                    {comparison_feedback && (
-                      <Typography
-                        variant="body1"
-                        sx={{ whiteSpace: 'pre-line' }}
-                      >
-                        {comparison_feedback}
-                      </Typography>
-                    )}
-                  </Box>
+                  {comparison_feedback && (
+                    <Typography
+                      variant="body1"
+                      sx={{ whiteSpace: 'pre-line' }}
+                    >
+                      {comparison_feedback}
+                    </Typography>
+                  )}
+                </Box>
               </Paper>
             </Grid>
           </Grid>
         </TabPanel>
-      ) : (
-        <Alert severity="info">
-          さらに参考にしたいPDFをアップロード (最大5個) すると、
-          近づけられるように様々な視点からアドバイスを得られます！
-          比較用ファイルをアップロードして再分析ボタンを押してください。
-        </Alert>
       )}
+
+      {/* プレゼン分析タブ（extractedText があれば表示） */}
+      {extractedText && (
+        <TabPanel value={activeTab} index={comparisonData ? 2 : 1}>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Paper elevation={3} sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  プレゼンテーションのテキスト抽出
+                </Typography>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body1" gutterBottom>
+                    抽出されたテキスト:
+                  </Typography>
+                  <Paper variant="outlined" sx={{ p: 2, maxHeight: 400, overflow: 'auto' }}>
+                    <Typography variant="body2" component="pre">
+                      {extractedText}
+                    </Typography>
+                  </Paper>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </TabPanel>
+      )}
+
+      {/* プレゼン用分析タブ（comparisonData がある場合のみ表示） */}
+      {comparisonData && Object.keys(comparisonData).length > 0 ? (
+        <TabPanel value={activeTab} index={2}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  プレゼンテーションの強み
+                </Typography>
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                  プレゼンテーションの強みに関するフィードバックをここに表示できます。
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Paper elevation={3} sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  プレゼンテーションの弱み
+                </Typography>
+                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                  プレゼンテーションの弱みに関するフィードバックをここに表示できます。
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </TabPanel>
+      )
+      : <Alert severity="info">
+          音声を録してから、プレゼン用分析を開始してください。
+        </Alert>
+      }
 
       {/* レポート印刷ボタン */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>

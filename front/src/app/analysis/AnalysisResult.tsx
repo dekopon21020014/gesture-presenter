@@ -22,6 +22,7 @@ import CompareIcon from '@mui/icons-material/Compare';
 import DescriptionIcon from '@mui/icons-material/Description';
 import FormatSizeIcon from '@mui/icons-material/FormatSize';
 import MessageIcon from '@mui/icons-material/Message';
+import PresentationAnalysisList from './PresentationAnalysisList';
 
 import {
   RadarChart,
@@ -39,52 +40,83 @@ import {
   Tooltip
 } from 'recharts';
 
-import { Button } from 'ginga-ui/core'; // Ginga UIのButtonをインポート
-import ThemeClient from 'ginga-ui/ai'; // ThemeClientをインポート
+import { Button } from 'ginga-ui/core';
+import ThemeClient from 'ginga-ui/ai';
 
-/** タブパネルコンポーネント */
-const TabPanel = ({ children, value, index, ...other }) => (
-  <div
-    role="tabpanel"
-    hidden={value !== index}
-    id={`analysis-tabpanel-${index}`}
-    aria-labelledby={`analysis-tab-${index}`}
-    {...other}
-  >
-    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
-  </div>
-);
+interface FontAnalysis {
+  mean_size: number;
+  size_variation: number;
+  std_size: number;
+}
 
-/** CSS変数オブジェクトをCSS文字列に変換する関数 */
-const convertCSSVariablesToString = (variables) => {
-  const cssVariables = Object.entries(variables)
-    .map(([key, value]) => `${key}: ${value};`)
-    .join(' ');
-  return `:root { ${cssVariables} }`;
-};
+interface ComparisonResult {
+  similarity_score: number;
+  comparison_notes: string;
+}
 
-/** カテゴリのラベル定義 */
-const CATEGORY_LABELS = {
-  technical: '技術的な説明',
-  background: '背景説明',
-  methodology: '手法の説明',
-  results: '結果・成果',
-  conclusion: 'まとめ'
-};
+interface ComparisonData {
+  [key: string]: ComparisonResult;
+}
+
+interface ReferenceFile {
+  fileId: string;
+  file: File;
+}
+
+interface ExtractedText {
+  [page: number]: string;
+}
+
+interface TranscriptionMap {
+  [page: string]: string | null;
+}
 
 interface AnalysisResultProps {
   geminiResponse: string | null;
   fontAnalysis: FontAnalysis | null;
-  comparisonData?: {
-    [key: string]: {
-      similarity_score: number;
-      comparison_notes: string;
-    };
-  } | null;
-  comparison_feedback?: string| null;
-  referenceFiles: ReferenceFile[]| null;
-  extractedText?: string | null; // 追加
+  comparisonData?: ComparisonData | null;
+  comparison_feedback?: string | null;
+  referenceFiles: ReferenceFile[] | null;
+
+  /** 追加: analyze-presentation の結果を受け取る */
+  presentationAnalysisResult?: any;
+
+  extractedText?: ExtractedText | null;
+  transcriptions?: TranscriptionMap;
 }
+
+const TabPanel = ({
+  children,
+  value,
+  index,
+  ...other
+}: {
+  children: React.ReactNode;
+  value: number;
+  index: number;
+}) => (
+  <div role="tabpanel" hidden={value !== index} {...other}>
+    {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+  </div>
+);
+
+const convertCSSVariablesToString = (variables: Record<string, string>) => {
+  return (
+    ':root { ' +
+    Object.entries(variables)
+      .map(([key, value]) => `${key}: ${value};`)
+      .join(' ') +
+    ' }'
+  );
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  technical: '技術的な説明',
+  background: '背景説明',
+  methodology: '手法の説明',
+  results: '結果・成果',
+  conclusion: 'まとめ',
+};
 
 const AnalysisResult: React.FC<AnalysisResultProps> = ({
   geminiResponse,
@@ -92,43 +124,36 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
   comparisonData,
   comparison_feedback,
   referenceFiles = [],
-  extractedText // 追加
+  presentationAnalysisResult,  // analyze-presentationの返却結果
+  extractedText,
+  transcriptions,
 }) => {
-  console.log(extractedText)
   const [activeTab, setActiveTab] = useState(0);
   const [themeCSS, setThemeCSS] = useState('');
 
-  // ThemeClientの初期化
   const themeClient = new ThemeClient({
     clientType: 'openai',
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true, // クライアントサイドでの使用を許可
+    dangerouslyAllowBrowser: true,
   });
 
-  // テーマ生成関数
   const generateTheme = async () => {
     try {
       const response = await themeClient.generateTheme('PDF分析レポートのテーマ');
       const { CSSCode } = response;
-      const cssString = convertCSSVariablesToString(CSSCode);
-      setThemeCSS(cssString);
-    } catch (error) {
-      console.error('テーマ生成エラー:', error);
-      // 必要に応じてユーザーにエラーメッセージを表示
+      setThemeCSS(convertCSSVariablesToString(CSSCode));
+    } catch (err) {
+      console.error('テーマ生成エラー:', err);
     }
   };
 
-  // コンポーネントのマウント時にテーマを生成
   useEffect(() => {
     generateTheme();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * 基本分析タブで表示する項目。
-   * ここでは１つ目の項目で単一のフィードバック（geminiResponse）を表示する。
-   */
-  const sections = [
+  // === 基本分析セクション ===
+  const feedbackSections = [
     {
       title: '全体的なフィードバック',
       icon: DescriptionIcon,
@@ -137,7 +162,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
     {
       title: '視覚的一貫性',
       icon: FormatSizeIcon,
-      content: '視覚的一貫性に関する追加のコメントをここに表示できます。',
+      content: '視覚的一貫性に関する追加コメントがあれば表示',
       metrics: [
         {
           label: '平均フォントサイズ',
@@ -162,53 +187,34 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
     {
       title: 'メインメッセージ',
       icon: MessageIcon,
-      content:
-        'メインメッセージの把握状況や伝わりやすさなど、追加でフィードバックを記載することができます。',
+      content: 'メインメッセージの把握状況や伝わりやすさ等について',
     },
   ];
 
-  /**
-   * comparisonData が存在する場合のみ使用するデータ群。
-   */
-  const structuralData = comparisonData && Object.keys(comparisonData).length > 0
-    ? [
-        {
-          aspect: '目次',
-          current: comparisonData.current.has_toc ? 100 : 0,
-          reference: comparisonData.structural_features.toc_ratio * 100,
-        },
-        {
-          aspect: 'まとめ',
-          current: comparisonData.current.has_summary ? 100 : 0,
-          reference: comparisonData.structural_features.summary_ratio * 100,
-        },
-        {
-          aspect: '問題提起',
-          current: comparisonData.current.has_problem_statement ? 100 : 0,
-          reference: comparisonData.structural_features.problem_statement_ratio * 100,
-        },
-        {
-          aspect: '具体例',
-          current: comparisonData.current.has_examples ? 100 : 0,
-          reference: comparisonData.structural_features.examples_ratio * 100,
-        },
-      ]
-    : [];
+  // ダミーデータを使った比較分析用のテーブル
+  let structuralData: Array<{ aspect: string; current: number; reference: number }> = [];
+  let distributionData: Array<{ category: string; current: number; reference: number }> = [];
 
-  const distributionData = comparisonData && Object.keys(comparisonData).length > 0
-    ? Object.entries(comparisonData.current.content_distribution).map(([key, value]) => ({
-        category: CATEGORY_LABELS[key] || key,
-        current: value * 100,
-        reference: comparisonData.reference_avg[key] * 100,
-      }))
-    : [];
+  if (comparisonData && Object.keys(comparisonData).length > 0) {
+    structuralData = [
+      { aspect: '目次', current: 80, reference: 70 },
+      { aspect: 'まとめ', current: 60, reference: 50 },
+      { aspect: '問題提起', current: 90, reference: 80 },
+      { aspect: '具体例', current: 70, reference: 75 },
+    ];
+    distributionData = [
+      { category: CATEGORY_LABELS.technical, current: 40, reference: 30 },
+      { category: CATEGORY_LABELS.background, current: 50, reference: 45 },
+      { category: CATEGORY_LABELS.methodology, current: 60, reference: 55 },
+      { category: CATEGORY_LABELS.results, current: 70, reference: 65 },
+      { category: CATEGORY_LABELS.conclusion, current: 85, reference: 80 },
+    ];
+  }
 
   return (
     <Container maxWidth="lg">
-      {/* 生成されたテーマを適用 */}
       {themeCSS && <style>{themeCSS}</style>}
 
-      {/* タイトル */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" component="h2" gutterBottom>
           PDF分析レポート
@@ -218,54 +224,40 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
         </Alert>
       </Box>
 
-      {/* タブ切り替え */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
           value={activeTab}
-          onChange={(e, newValue) => setActiveTab(newValue)}
+          onChange={(e, nv) => setActiveTab(nv)}
           variant="fullWidth"
         >
           <Tab icon={<AutoGraphIcon />} label="基本分析" />
-          {/* comparisonData がある場合のみ「比較分析」タブを表示 */}
           {comparisonData && Object.keys(comparisonData).length > 0 && (
             <Tab icon={<CompareIcon />} label="比較分析" />
           )}
-          {/* extractedText が存在する場合のみ「プレゼン分析」タブを表示 */}
-          {extractedText && (
-            <Tab icon={<DescriptionIcon />} label="プレゼン分析" />
-          )}
+          <Tab icon={<DescriptionIcon />} label="解析結果" />
         </Tabs>
       </Box>
 
-      {/* 基本分析タブ */}
+      {/* 基本分析 */}
       <TabPanel value={activeTab} index={0}>
         <Grid container spacing={3}>
-          {sections.map((section, index) => (
-            <Grid item xs={12} key={index}>
+          {feedbackSections.map((section, idx) => (
+            <Grid item xs={12} key={idx}>
               <Paper elevation={3} sx={{ p: 3 }}>
-                {/* タイトルとアイコン */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   {section.icon && (
                     <section.icon sx={{ mr: 1, color: 'primary.main' }} />
                   )}
-                  <Typography variant="h6" component="h3">
-                    {section.title}
-                  </Typography>
+                  <Typography variant="h6">{section.title}</Typography>
                 </Box>
-
                 <Divider sx={{ my: 2 }} />
 
-                {/* metricsがあればテーブルで表示 */}
                 {section.metrics && (
                   <Table size="small">
                     <TableBody>
-                      {section.metrics.map((metric, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell
-                            component="th"
-                            scope="row"
-                            sx={{ border: 'none', pl: 0 }}
-                          >
+                      {section.metrics.map((metric, i) => (
+                        <TableRow key={i}>
+                          <TableCell sx={{ border: 'none', pl: 0 }}>
                             {metric.label}
                           </TableCell>
                           <TableCell align="right" sx={{ border: 'none' }}>
@@ -281,7 +273,6 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
                   </Table>
                 )}
 
-                {/* 単一のテキストフィードバック表示 */}
                 {section.content && (
                   <Typography sx={{ mt: 2, whiteSpace: 'pre-line' }}>
                     {section.content}
@@ -293,19 +284,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
         </Grid>
       </TabPanel>
 
-      {/* 比較分析タブ（comparisonData があれば表示） */}
+      {/* 比較分析 */}
       {comparisonData && Object.keys(comparisonData).length > 0 && (
         <TabPanel value={activeTab} index={1}>
           <Grid container spacing={3}>
-            {/* 構造分析比較 */}
             <Grid item xs={12} md={6}>
               <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ textAlign: 'center' }}
-                >
-                  構造分析比較
+                <Typography variant="h6" align="center" gutterBottom>
+                  構造分析比較（ダミー）
                 </Typography>
                 <ResponsiveContainer width="100%" height={400}>
                   <RadarChart data={structuralData}>
@@ -333,15 +319,10 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
               </Paper>
             </Grid>
 
-            {/* 内容分布比較 */}
             <Grid item xs={12} md={6}>
               <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={{ textAlign: 'center' }}
-                >
-                  内容分布比較
+                <Typography variant="h6" align="center" gutterBottom>
+                  内容分布比較（ダミー）
                 </Typography>
                 <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={distributionData}>
@@ -372,7 +353,6 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
               </Paper>
             </Grid>
 
-            {/* 比較分析のポイント */}
             <Grid item xs={12}>
               <Paper elevation={3} sx={{ p: 3 }}>
                 <Typography variant="h6" gutterBottom>
@@ -381,10 +361,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
                 </Typography>
                 <Box sx={{ mt: 2, pl: 2 }}>
                   {comparison_feedback && (
-                    <Typography
-                      variant="body1"
-                      sx={{ whiteSpace: 'pre-line' }}
-                    >
+                    <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
                       {comparison_feedback}
                     </Typography>
                   )}
@@ -395,69 +372,57 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({
         </TabPanel>
       )}
 
-      {/* プレゼン分析タブ（extractedText があれば表示） */}
-      {extractedText && (
-        <TabPanel value={activeTab} index={comparisonData ? 2 : 1}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  プレゼンテーションのテキスト抽出
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body1" gutterBottom>
-                    抽出されたテキスト:
+      {/* 解析結果タブ: analyze-presentation の結果や文字起こしを表示 */}
+      <TabPanel
+        value={activeTab}
+        index={comparisonData && Object.keys(comparisonData).length > 0 ? 2 : 1}
+      >
+        <Paper elevation={3} sx={{ p: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            analyze-presentation の結果
+          </Typography>
+          {presentationAnalysisResult ? (
+            <>
+              <Alert severity="success" sx={{ mb: 3 }}>
+                <strong>analyze-presentation</strong> のAPIレスポンスがこちらです
+              </Alert>
+              <Box sx={{ mb: 2 }}>
+                <PresentationAnalysisList result={presentationAnalysisResult.result} />
+              </Box>
+            </>
+          ) : (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              まだ <strong>/api/analyze-presentation</strong> への解析を実行していません。
+            </Alert>
+          )}
+
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="h6" gutterBottom>
+            文字起こし（getTranscription の結果）
+          </Typography>
+          {transcriptions && Object.keys(transcriptions).length > 0 ? (
+            <Box>
+              {Object.entries(transcriptions).map(([page, text]) => (
+                <Box key={page} sx={{ mb: 2 }}>
+                  <Typography variant="subtitle1">
+                    ページ {page} の文字起こし:
                   </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, maxHeight: 400, overflow: 'auto' }}>
-                    <Typography variant="body2" component="pre">
-                      {extractedText}
-                    </Typography>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    {text || '[文字起こしが存在しません]'}
                   </Paper>
                 </Box>
-              </Paper>
-            </Grid>
-          </Grid>
-        </TabPanel>
-      )}
-
-      {/* プレゼン用分析タブ（comparisonData がある場合のみ表示） */}
-      {comparisonData && Object.keys(comparisonData).length > 0 ? (
-        <TabPanel value={activeTab} index={2}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  プレゼンテーションの強み
-                </Typography>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                  プレゼンテーションの強みに関するフィードバックをここに表示できます。
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  プレゼンテーションの弱み
-                </Typography>
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                  プレゼンテーションの弱みに関するフィードバックをここに表示できます。
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-        </TabPanel>
-      )
-      : <Alert severity="info">
-          音声を録してから、プレゼン用分析を開始してください。
-        </Alert>
-      }
+              ))}
+            </Box>
+          ) : (
+            <Alert severity="info">文字起こしがありません。</Alert>
+          )}
+        </Paper>
+      </TabPanel>
 
       {/* レポート印刷ボタン */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Button
-          onClick={() => window.print()}
-          startIcon={<PrintIcon />}
-        >
+        <Button onClick={() => window.print()} startIcon={<PrintIcon />}>
           レポートを印刷
         </Button>
       </Box>

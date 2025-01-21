@@ -1,5 +1,5 @@
 import { type StoredFileInfo } from "@/app/types/file-info.type"
-import { deleteFileInfoFromFirebase, getAllFilesInfoFromFirebase, getFileFromStoage, getUrlAndName } from "@/app/firebase/form/fileInfo"
+import { addAdvice, deleteFileInfoFromFirebase, getAllFilesInfoFromFirebase } from "@/app/firebase/form/fileInfo"
 import { deleteFileFromFirebase } from "@/app/firebase/form/uploadFile"
 
 export function saveFileInfoToLocalStorage(fileInfo: StoredFileInfo) {
@@ -12,9 +12,18 @@ export function saveFileInfoToLocalStorage(fileInfo: StoredFileInfo) {
 
 // 全てのファイル情報を取得する関数
 export const getAllFilesInfo = async (): Promise<StoredFileInfo[] | undefined> => {
-  const firebaseFiles: StoredFileInfo[] = await getAllFilesInfoFromFirebase();
+  // localStorageから情報を取得
+  const files: StoredFileInfo[] = Object.keys(localStorage)
+    .map(key => getStoredFileInfoFromLocalStorage(key))
+    .filter(fileInfo => fileInfo !== null) as StoredFileInfo[];
+  if (files.length > 0) return files;
+
+  // localStorageにデータがなければFirebaseから取得し、ローカルに保存
+  const firebaseFiles = await getAllFilesInfoFromFirebase();
+  firebaseFiles.forEach(file => saveFileInfoToLocalStorage(file));
+
   return firebaseFiles;
-}
+};
 
 export const getFileInfo = async (fileId: string): Promise<StoredFileInfo | null> => {
   try {
@@ -36,6 +45,17 @@ export const getFileUrl = async (fileId: string): Promise<string | null> => {
   }
   return fileInfo.fileUrl
 }
+
+export const updateAdvice = async (fileId: string, advice: string): Promise<string | null> => {
+  const fileInfo = await getFileInfo(fileId);
+  await addAdvice(fileId, advice);
+  if (fileInfo) {
+    fileInfo.advice = advice;
+    fileInfo.analyzed = true;
+    localStorage.setItem(fileId, JSON.stringify(fileInfo));
+  }
+}
+
 
 export const deleteFromLocalStorage = async (): Promise<void> => {
   try {
@@ -83,9 +103,15 @@ export const deleteAllFilesInfo = async (): Promise<void> => {
 
 // URLからファイルを読み込み
 export const fetchPDF = async (fileId: string): Promise<File | null> => {
+  const fileInfo = await getFileInfo(fileId);
+  if (!fileInfo?.fileUrl) return null;
+
   try {
-    const file = await getFileFromStoage(fileId);
-    return file;
+    const response = await fetch(fileInfo.fileUrl);
+    if (!response.ok) throw new Error(`Failed to fetch file from URL: ${fileUrl}`);
+
+    const blob = await response.blob();
+    return new File([blob], fileInfo.fileName, { type: blob.type });
   } catch (error) {
     console.error("Error fetching file:", error);
     return null; 

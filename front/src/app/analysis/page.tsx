@@ -31,7 +31,11 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
 
 import AnalysisResult from './AnalysisResult';
-import { fetchPDF } from '../../app/utils/pdfStore';
+import { fetchPDF } from '@/app/utils/pdfStore';
+import { type StoredFileInfo } from "@/app/types/file-info.type"
+import { saveFileInfoToLocalStorage, getAllFilesInfo, updateAdvice} from '@/app/utils/pdfStore'
+import { Timestamp } from "firebase/firestore";
+import FileUpFormFirebase from '@/app/components/Form/FileUpFormFirebase';
 
 interface FontAnalysis {
   mean_size: number;
@@ -53,15 +57,28 @@ interface AnalysisData {
 }
 
 interface ReferenceFile {
+  fileId: string;
   file: File;
+}
+
+type mainFileInfo = {
   id: string;
+  fileName: string;
+  filePath: string,
+  fileUrl: string;
+  fileSize: number
+  advice: string;
+  analyzed: boolean;
+  createdAt: Timestamp;
+  file?: File;
 }
 
 const AnalysisPage = () => {
   const searchParams = useSearchParams();
   const pdfId = searchParams.get('pdf_id');
 
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [allFilesInfo, setAllFilesInfo] = useState<StoredFileInfo[] | undefined>(undefined);
+  const [mainFileInfo, setMainFileInfo] = useState<mainFileInfo | undefined>(undefined);
   const [referenceFiles, setReferenceFiles] = useState<ReferenceFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -71,61 +88,89 @@ const AnalysisPage = () => {
 
   const steps = ['ファイル確認', '比較用ファイル選択', '分析結果'];
 
-  // ページ初回ロード時にPDFファイルを取得
+  // pdfIdが更新されたらallFilesInfoとmainFileInfoを更新
   useEffect(() => {
     const fetchAndSetPdfFile = async () => {
       if (pdfId) {
-        try {
-          const file = await fetchPDF(pdfId);
-          setPdfFile(file);
-          if (file) {
-            setActiveStep(1);
+        const allFilesInfo = await getAllFilesInfo();
+        if (allFilesInfo && allFilesInfo.length > 0) {
+          setAllFilesInfo(allFilesInfo);
+          const mainFileInfo = allFilesInfo.find(fileInfo => fileInfo.id === pdfId);
+          
+          if (mainFileInfo) {
+            setMainFileInfo({ ...mainFileInfo });
           }
-        } catch (error) {
-          console.error("Error in fetching the PDF:", error);
-        } finally {
-          setLoading(false);
         }
       }
     };
-
     fetchAndSetPdfFile();
   }, [pdfId]);
-
-  /**
-   * pdfFile が取得できた段階で自動分析を実行
-   */
+  
+  // mainFileInfoが更新され、まだファイルが分析されていなければ自動で分析処理
   useEffect(() => {
-    if (pdfFile) {
-      performAnalysis();
+    if (mainFileInfo && !mainFileInfo.analyzed && !analyzing) {
+      performAnalysis(false);
+      setAnalyzing(true);
+      setActiveStep(1);
+    } else if (mainFileInfo && mainFileInfo.analyzed) {
+      try {
+        const advice = JSON.parse(mainFileInfo.advice); // JSON.parseで文字列をオブジェクトに変換
+    
+        const analysisData: AnalysisData = {
+          font_analysis: advice.font_analysis,
+          gemini_response: advice.gemini_response,
+          referenceFiles: []
+        };
+    
+        setAnalysisData(analysisData);
+        setActiveStep(2);
+      } catch (error) {
+        console.error("Error parsing advice:", error);
+        setError("分析結果の読み込みに失敗しました。");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdfFile]);
+  }, [mainFileInfo]);
+  
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
-  const handleReferenceUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && referenceFiles.length < 5) {
-      const file = event.target.files[0];
-      const fileId = Math.random().toString(36).substr(2, 9);
-      setReferenceFiles((prev) => [...prev, { file, id: fileId }]);
+  const handleFileUploadSuccess = (storedFileInfo: StoredFileInfo) => {
+    saveFileInfoToLocalStorage(storedFileInfo)
+    setAllFilesInfo((prev: StoredFileInfo[] | undefined) => [...(prev ?? []), storedFileInfo]);
+  };
+  
+  const handleAddReference = async (fileId: string) => {
+    if (fileId && referenceFiles.length < 5) {
+      const file = await fetchPDF(fileId)
+      if (file) {
+        setReferenceFiles((prev: ReferenceFile[]) => [...prev, { fileId, file }]);
+      }
     }
   };
 
-  const handleRemoveReference = (id: string) => {
-    setReferenceFiles((prev) => prev.filter((ref) => ref.id !== id));
+  const handleRemoveReference = (fileId: string) => {
+    setReferenceFiles((prev: ReferenceFile[]) => prev.filter((ref) => ref.fileId !== fileId));
   };
 
-  const performAnalysis = async () => {
-    if (!pdfFile) return;
-    setAnalyzing(true);
-    setError(null);
+  const performAnalysis = async (compare: boolean) => {
+    if (!mainFileInfo) return;
+
+    const file = await fetchPDF(mainFileInfo.id)
+    if (!file) return;
+    setMainFileInfo({ ...mainFileInfo, file });
+    console.log("MainFileInfo", mainFileInfo)
 
     const formData = new FormData();
-    formData.append('file', pdfFile, pdfFile.name);
+    formData.append('file', file, mainFileInfo.fileName);
 
-    // 比較用ファイルがある場合は送信して再分析する
-    referenceFiles.forEach((ref) => {
-      formData.append('ref', ref.file);
-    });
+    // 比較用ファイルがある場合は他のファイルも送信する
+    if (compare) {
+      referenceFiles.forEach((ref: ReferenceFile) => {
+        formData.append('ref', ref.file);
+      });
+    }
 
     try {
       const response = await fetch('/api/analyze-slide', {
@@ -139,6 +184,11 @@ const AnalysisPage = () => {
       }
 
       const data = await response.json();
+
+      if (!compare) {  // ファイル単独の分析時は分析結果を保存する
+        updateAdvice(mainFileInfo.id, JSON.stringify(data))
+      }
+
       setAnalysisData(data);
       setActiveStep(2);
     } catch (error) {
@@ -166,7 +216,7 @@ const AnalysisPage = () => {
   }
 
   // ファイルが無かった場合
-  if (!pdfFile) {
+  if (!mainFileInfo) {
     return (
       <Container maxWidth="md">
         <Box sx={{ mt: 8, textAlign: 'center' }}>
@@ -222,105 +272,115 @@ const AnalysisPage = () => {
               </Typography>
               <Box sx={{ pl: 4 }}>
                 <Typography variant="body1" gutterBottom>
-                  ファイル名: {pdfFile.name}
+                  ファイル名: {mainFileInfo.fileName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  サイズ: {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                  サイズ: {(mainFileInfo.fileSize / 1024 / 1024).toFixed(2)} MB
                 </Typography>
               </Box>
             </Paper>
 
             {/* 比較用ファイル */}
             <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: 'flex', alignItems: 'center' }}
-              >
-                <CompareArrowsIcon sx={{ mr: 1 }} />
-                比較用ファイル
-              </Typography>
-
-              {referenceFiles.length < 5 && (
-                <Button
-                  variant="outlined"
-                  component="label"
-                  startIcon={<UploadFileIcon />}
-                  sx={{ mb: 2 }}
-                  color="primary"
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ display: 'flex', alignItems: 'center' }}
                 >
-                  比較用ファイルを追加
-                  <input
-                    type="file"
-                    hidden
-                    accept=".pdf"
-                    onChange={handleReferenceUpload}
-                  />
-                </Button>
-              )}
+                  <CompareArrowsIcon sx={{ mr: 1 }} />
+                  比較用ファイル
+                </Typography>
 
-              {referenceFiles.length > 0 ? (
-                <>
-                  <List
-                    sx={{ bgcolor: 'background.paper', borderRadius: 1 }}
-                  >
-                    {referenceFiles.map((ref, index) => (
-                      <React.Fragment key={ref.id}>
-                        {index > 0 && <Divider />}
-                        <ListItem
-                          secondaryAction={
-                            <IconButton
-                              edge="end"
-                              aria-label="delete"
-                              onClick={() => handleRemoveReference(ref.id)}
-                              color="error"
+                {referenceFiles.length < 5 && (
+                  <>
+                    <Box sx={{ mb: 2 }}>
+                      <FileUpFormFirebase onUploadSuccess={handleFileUploadSuccess} />
+                      <List>
+                        {allFilesInfo
+                          ?.filter((fileInfo: StoredFileInfo) => 
+                            fileInfo.id !== mainFileInfo.id &&
+                            !referenceFiles.some((refFile: ReferenceFile) => refFile.fileId === fileInfo.id)
+                          )
+                          .map((fileInfo: StoredFileInfo) => (
+                          <ListItem key={fileInfo.id}>
+                            <ListItemText 
+                              primary={fileInfo.fileName} 
+                              secondary={`サイズ: ${(fileInfo.fileSize / 1024 / 1024).toFixed(2)} MB`} 
+                            />
+                            <Button
+                              onClick={() => handleAddReference(fileInfo.id)}
+                              variant="outlined"
+                              size="small"
                             >
-                              <DeleteIcon />
-                            </IconButton>
-                          }
-                        >
-                          <ListItemText
-                            primary={ref.file.name}
-                            secondary={`${(
-                              ref.file.size / 1024 / 1024
-                            ).toFixed(2)} MB`}
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    ))}
-                  </List>
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {5 - referenceFiles.length}個のファイルを追加できます
-                    </Typography>
-                  </Box>
+                              比較ファイルに追加
+                            </Button>
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Box>
+                  </>
+                )}
 
-                  {/* 再分析ボタン */}
-                  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={performAnalysis}
-                      disabled={analyzing}
-                      startIcon={
-                        analyzing ? (
-                          <CircularProgress size={20} />
-                        ) : (
-                          <AnalysisIcon />
-                        )
-                      }
-                      size="large"
-                    >
-                      {analyzing ? '再分析中...' : '再分析'}
-                    </Button>
-                  </Box>
-                </>
-              ) : (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  比較用のPDFファイルをアップロードしてください（最大5ファイル）
-                </Alert>
-              )}
-            </Paper>
+                {referenceFiles.length > 0 ? (
+                  <>
+                    <List sx={{ bgcolor: 'background.paper', borderRadius: 1 }}>
+                      {referenceFiles.map((ref: ReferenceFile, index: number) => (
+                        <React.Fragment key={ref.fileId}>
+                          {index > 0 && <Divider />}
+                          <ListItem
+                            secondaryAction={
+                              <IconButton
+                                edge="end"
+                                aria-label="delete"
+                                onClick={() => handleRemoveReference(ref.fileId)}
+                                color="error"
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            }
+                          >
+                            <ListItemText
+                              primary={ref.file.name}
+                              secondary={`サイズ: ${(
+                                ref.file.size / 1024 / 1024
+                              ).toFixed(2)} MB`}
+                            />
+                          </ListItem>
+                        </React.Fragment>
+                      ))}
+                    </List>
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {5 - referenceFiles.length}個のファイルを追加できます
+                      </Typography>
+                    </Box>
+
+                    {/* 再分析ボタン */}
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => performAnalysis(true)}
+                        disabled={analyzing}
+                        startIcon={
+                          analyzing ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <AnalysisIcon />
+                          )
+                        }
+                        size="large"
+                      >
+                        {analyzing ? '再分析中...' : '再分析'}
+                      </Button>
+                    </Box>
+                  </>
+                ) : (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    比較用のPDFファイルを選択してください（最大5ファイル）
+                  </Alert>
+                )}
+              </Paper>
 
             {/* ローディングバー */}
             {analyzing && (

@@ -5,9 +5,10 @@ from fastapi.responses import JSONResponse
 import shutil
 from services.voice_analyzer import VoiceAnalyzer
 from services.slide_analyzer import SlideAnalyzer
+from services.presentation_analyzer import PresentationAnalyzer, Presentation
 from utils.pdf_utils import get_text
 from config.settings import settings
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 router = APIRouter()
 
@@ -65,6 +66,20 @@ async def analyze_presentation(voice: UploadFile = File(...)):
 async def analyze_presentation(file: UploadFile = File(...)):    
     pdf_data = await file.read()
     return get_text(pdf_data)
+
+@router.post("/analyze-presentation")
+async def analyze_presentation(presentations: Dict[int, Presentation]):    
+    analyzer = PresentationAnalyzer()
+    result = {}
+    # デバッグ用に受け取ったデータを表示
+    for page, content in presentations.items():
+        result[page] = await analyzer.compare(content)
+
+    return {
+        "message": "Slides processed successfully", 
+        "pages_received": len(presentations), 
+        "result": result
+    }
     
 @router.get("/")
 def read_root():

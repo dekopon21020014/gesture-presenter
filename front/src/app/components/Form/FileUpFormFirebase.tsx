@@ -1,9 +1,7 @@
 'use client';
 
-import React, { useState, ChangeEvent, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, ChangeEvent, useRef, DragEvent } from 'react';
 import { 
-  Button, 
   Box,
   Typography,
   Alert
@@ -20,39 +18,82 @@ export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => 
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateFile = (selectedFile: File): boolean => {
+    if (selectedFile.type !== 'application/pdf') {
+      setError('PDFファイルのみアップロード可能です。');
+      return false;
+    }
+
+    if (selectedFile.size > 20 * 1024 * 1024) {
+      setError('ファイルサイズは20MB以下にしてください。');
+      return false;
+    }
+
+    setError(null);
+    return true;
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-
-      // Validate file type
-      if (selectedFile.type !== 'application/pdf') {
-        setError('PDFファイルのみアップロード可能です。');
-        return;
+      if (validateFile(selectedFile)) {
+        setFile(selectedFile);
+        handleUpload(selectedFile);
       }
-
-      // Validate file size (20MB limit)
-      if (selectedFile.size > 20 * 1024 * 1024) {
-        setError('ファイルサイズは20MB以下にしてください。');
-        return;
-      }
-
-      setError(null);
-      setFile(selectedFile);
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      if (validateFile(droppedFile)) {
+        setFile(droppedFile);
+        handleUpload(droppedFile);
+      }
+    }
+  };
+
+  const handleClick = () => {
+    if (!uploading && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleUpload = async (selectedFile: File = file!) => {
+    if (!selectedFile) return;
     setUploading(true);
     setError(null);
 
     try {
-      const [filePath, downloadURL] = await uploadFile(file);
+      const [filePath, downloadURL] = await uploadFile(selectedFile);
       const fileData = {
-        fileName: file.name,
+        fileName: selectedFile.name,
         filePath: filePath,
+        fileSize: selectedFile.size,
         downloadURL: downloadURL,
       };
       const storedFileInfo = await addFileInfo(fileData);
@@ -79,57 +120,70 @@ export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => 
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        gap: 2,
+        width: '100%' 
+      }}
+    >
       {error && (
         <Alert severity="error" sx={{ width: '100%' }}>
           {error}
         </Alert>
       )}
       
-      <input 
-        type="file" 
-        accept=".pdf" 
-        onChange={handleFileChange} 
-        ref={fileInputRef} 
-        style={{ display: 'none' }} 
-        id="pdf-upload-input" 
-      />
-      
-      <label htmlFor="pdf-upload-input">
-        <Button 
-          variant="outlined" 
-          component="span" 
-          sx={{ 
-            padding: '10px 20px', 
-            borderColor: '#1976d2', 
-            color: '#1976d2' 
-          }}
-        >
-          PDFを選択
-        </Button>
-      </label>
-      
-      {file && (
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          選択されたファイル: {file.name}
-        </Typography>
-      )}
-      
-      <Button 
-        onClick={handleUpload} 
-        disabled={!file || uploading} 
-        variant="contained" 
-        sx={{ 
-          padding: '10px 20px', 
-          backgroundColor: uploading ? '#ccc' : '#1976d2', 
-          color: '#fff', 
-          borderRadius: 1, 
-          '&:hover': { backgroundColor: '#1565c0' }, 
-          '&:disabled': { backgroundColor: '#ccc', color: '#fff' }
+      <Box
+        onClick={handleClick}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        sx={{
+          width: '100%',
+          minHeight: '200px',
+          border: '2px dashed',
+          borderColor: isDragging ? '#1976d2' : '#ccc',
+          borderRadius: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 3,
+          backgroundColor: isDragging ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer',
+          '&:hover': {
+            borderColor: '#1976d2',
+            backgroundColor: 'rgba(25, 118, 210, 0.04)'
+          }
         }}
       >
-        {uploading ? 'アップロード中...' : 'アップロード'}
-      </Button>
+        <input 
+          type="file" 
+          accept=".pdf" 
+          onChange={handleFileChange} 
+          ref={fileInputRef} 
+          style={{ display: 'none' }} 
+        />
+        
+        <Typography 
+          variant="body1" 
+          color="textSecondary" 
+          align="center"
+          sx={{ mb: 2 }}
+        >
+          {uploading ? 'アップロード中...' : 'クリックまたはドラッグ＆ドロップでPDFファイルを選択'}
+        </Typography>
+        
+        {file && (
+          <Typography variant="body1" sx={{ mt: 2 }}>
+            選択されたファイル: {file.name}
+          </Typography>
+        )}
+      </Box>
       
       <Typography variant="caption" color="textSecondary">
         PDFファイル（20MB以下）を選択してください

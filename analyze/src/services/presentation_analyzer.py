@@ -1,6 +1,8 @@
 from fastapi import HTTPException
 from api.dependencies import gemini_model
 from pydantic import BaseModel
+import json
+
 from prompts.load import load_prompt
 
 class Presentation(BaseModel):
@@ -15,8 +17,10 @@ class PresentationAnalyzer:
                 transcription=content.transcription,
                 slide=content.slide
             )
-            response = gemini_model.generate_content(prompt)
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error processing page {page}: {str(e)}")
+            result = gemini_model.generate_content(prompt)
+            response = json.loads(result.text.strip("```json\n").strip("```"))
 
-        return response.text
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        print(response)
+        return response

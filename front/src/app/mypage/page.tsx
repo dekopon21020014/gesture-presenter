@@ -73,7 +73,7 @@ const MyPage = () => {
     return () => clearInterval(interval);
   }, []);
   
-  const handleLocalUploadSuccess = (storedFileInfo: StoredFileInfo) => {
+  const handleFileUploadSuccess = (storedFileInfo: StoredFileInfo) => {
     saveFileInfoToLocalStorage(storedFileInfo)
     const uploadedFile: UploadedFile = {
       id: storedFileInfo.id,
@@ -153,7 +153,7 @@ const MyPage = () => {
         </Box>
 
         {/* ファイルアップロードフォーム */}
-        <FileUpFormFirebase onUploadSuccess={handleLocalUploadSuccess} />
+        <FileUpFormFirebase onUploadSuccess={handleFileUploadSuccess} />
 
         {/* アップロード済みファイル一覧 */}
         <Paper elevation={3} sx={{ p: 3, mt: 4 }} component="section">

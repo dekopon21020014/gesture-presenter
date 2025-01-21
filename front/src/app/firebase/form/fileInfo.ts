@@ -7,18 +7,20 @@ import { type StoredFileInfo } from '@/app/types/file-info.type';
 type CreateFileData = {
   fileName: string;
   filePath: string;
+  fileSize: number;
   downloadURL: string;
 };
 
 const db = getFirestore(firebase_app);
 
-export async function addFileInfo({ fileName, filePath, downloadURL }: CreateFileData): Promise<StoredFileInfo | Error> {
+export async function addFileInfo({ fileName, filePath, fileSize, downloadURL }: CreateFileData): Promise<StoredFileInfo | Error> {
   try {
     const uid = await getUserUid()
     const fileRef = await addDoc(collection(db, "users", uid, "files"), {
       fileName: fileName,
       filePath: filePath,
       fileUrl: downloadURL,
+      fileSize: fileSize,
       advice: "",
       analyzed: false,
       createdAt: serverTimestamp()

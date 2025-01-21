@@ -35,7 +35,7 @@ import {
   getAllFilesInfoFromFirebase,
   getFileFromStorage,
   addAdvice,
-  // getTranscription, // コメントアウト
+  getTranscription, // コメントアウト
 } from '@/app/firebase/form/fileInfo';
 
 import { StoredFileInfo } from "@/app/types/file-info.type"
@@ -156,11 +156,18 @@ const AnalysisPage = () => {
     const fetchTextAndTranscription = async () => {
       if (analysisData && !extractedText && !textLoading && mainFileInfo) {
         await performGetText();
-        await createDummyTranscriptions(); // getTranscriptionをコメントアウトし、ダミーを使用
+        // await createDummyTranscriptions(); // getTranscriptionをコメントアウトし、ダミーを使用
       }
     };
     fetchTextAndTranscription();
   }, [analysisData]);
+
+  useEffect(() => {
+    const runCreateDummyTranscriptions = async () => {
+      await createDummyTranscriptions(); 
+    };
+    runCreateDummyTranscriptions();
+  }, [extractedText]);
 
   useEffect(() => {
     setLoading(false);
@@ -252,13 +259,13 @@ const AnalysisPage = () => {
 
   // getTranscriptionをコメントアウトし、ダミー文字起こしを作成
   const createDummyTranscriptions = async () => {
-    if (!extractedText) return;
+    if (!extractedText || !mainFileInfo) return;
     const pages = Object.keys(extractedText);
     const tempMap: TranscriptionMap = {};
     for (const pageNum of pages) {
-      // const transcriptionText = await getTranscription(mainFileInfo.id, pageNum);
-      // tempMap[pageNum] = transcriptionText;
-      tempMap[pageNum] = `Dummy transcription for page ${pageNum}`;
+      const transcriptionText = await getTranscription(mainFileInfo.id, pageNum);
+      tempMap[pageNum] = transcriptionText;
+      // tempMap[pageNum] = `Dummy transcription for page ${pageNum}`;
     }
     setTranscriptions(tempMap);
   };
@@ -266,7 +273,7 @@ const AnalysisPage = () => {
   // analyze-presentation: extractedText + ダミーtranscriptionsをまとめて送信
   const performAnalyzePresentation = async () => {
     if (!extractedText) return;
-    try {
+    try {      
       const presentationsdata: any = {};
       Object.entries(extractedText).forEach(([page, text]) => {
         presentationsdata[page] = {

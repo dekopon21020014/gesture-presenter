@@ -30,6 +30,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
 
 import AnalysisResult from './AnalysisResult';
+import { fetchPDF } from '@/app/utils/pdfStore';
 import FileUpFormFirebase from '@/app/components/Form/FileUpFormFirebase';
 import {
   getAllFilesInfoFromFirebase,
@@ -37,9 +38,9 @@ import {
   addAdvice,
   getTranscription, // コメントアウト
 } from '@/app/firebase/form/fileInfo';
-
-import { StoredFileInfo } from "@/app/types/file-info.type"
-import { Timestamp } from "firebase/firestore";
+import { ConfirmationDialog } from '@/app/components/Form/ConfirmationDialog'
+import { StoredFileInfo } from '@/app/types/file-info.type'
+import { Timestamp } from 'firebase/firestore';
 
 interface FontAnalysis {
   mean_size: number;
@@ -95,6 +96,7 @@ const AnalysisPage = () => {
   const [mainFileInfo, setMainFileInfo] = useState<MainFileInfo | undefined>(undefined);
   const [referenceFiles, setReferenceFiles] = useState<ReferenceFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,8 +129,7 @@ const AnalysisPage = () => {
 
   useEffect(() => {
     if (mainFileInfo && !mainFileInfo.analyzed && !analyzing) {
-      performAnalysis(false);
-      setAnalyzing(true);
+      setShowConfirmDialog(true);
       setActiveStep(1);
     } else if (mainFileInfo && mainFileInfo.analyzed) {
       try {
@@ -190,19 +191,32 @@ const AnalysisPage = () => {
     setReferenceFiles((prev) => prev.filter((ref) => ref.fileId !== fileId));
   };
 
-  const performAnalysis = async (compare: boolean) => {
+  const handleConfirm = (removeTexts: string[] | null) => {
+    if (removeTexts) { 
+      setShowConfirmDialog(false);
+      performAnalysis(removeTexts, referenceFiles.length === 0); 
+    }
+  };
+
+  const performAnalysis = async (removeTexts: string[], compare: boolean) => {
+    setAnalyzing(true);
     if (!mainFileInfo) return;
-    const file = await getFileFromStorage(mainFileInfo.id);
+    const file = await fetchPDF(mainFileInfo.id)
     if (!file) return;
     setMainFileInfo({ ...mainFileInfo, file });
 
     const formData = new FormData();
     formData.append('file', file, mainFileInfo.fileName);
+
     if (compare) {
       referenceFiles.forEach((ref) => {
         formData.append('ref', ref.file);
       });
     }
+
+    removeTexts.forEach((text) => {
+      formData.append('remove_texts', text);
+    });
 
     try {
       const response = await fetch('/api/analyze-slide', {
@@ -439,7 +453,7 @@ const AnalysisPage = () => {
                     <Button
                       variant="contained"
                       color="primary"
-                      onClick={() => performAnalysis(true)}
+                      onClick={() => setShowConfirmDialog(true)}
                       disabled={analyzing}
                       startIcon={
                         analyzing ? <CircularProgress size={20} /> : <AnalysisIcon />
@@ -515,6 +529,14 @@ const AnalysisPage = () => {
           </Box>
         </Fade>
       </Box>
+
+      {showConfirmDialog && (
+        <ConfirmationDialog
+          showConfirmDialog={showConfirmDialog} 
+          fileNames={[mainFileInfo.fileName, ...referenceFiles.map(referenceFile => referenceFile.file.name)]}
+          handleConfirm={handleConfirm}
+        />
+      )}
     </Container>
   );
 };

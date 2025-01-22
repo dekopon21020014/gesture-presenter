@@ -7,8 +7,8 @@ import "ginga-ui/variables.css";
 const montserrat = Montserrat({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Gesture Presenter",
-  description: "ジェスチャーを用いたスライド操作アプリケーション",
+  title: "ボクプレ",
+  description: "SecHack365'24 グループ4A: 僕のプレゼンテーション家庭教師",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

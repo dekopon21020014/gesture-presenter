@@ -108,7 +108,7 @@ export async function getUrlAndName(fileId: string): Promise<[string | null, str
   }
 }
 
-export async function getFileFromStoage(fileId: string): Promise<File | null> {
+export async function getFileFromStorage(fileId: string): Promise<File | null> {
   try {
     const [url, name] = await getUrlAndName(fileId);
     if (!url) return null;
@@ -160,5 +160,31 @@ export async function addTranscription(
   } catch (e: any) {
     console.error("Error adding file document: ", e);
     return new Error("Failed to add file: " + e.message);
+  }
+}
+
+
+export async function getTranscription(pdf_id: string, page: string): Promise<string | null> {
+  try {
+    const uid = await getUserUid();
+    const docRef = doc(
+      db, 
+      "users", uid, 
+      "files", pdf_id,
+      "transcription", page
+    );
+
+    const fileDocSnap = await getDoc(docRef);
+
+    if (fileDocSnap.exists()) {
+      const data = fileDocSnap.data();
+      return data.text || null;
+    } else {
+      console.warn("No transcription found for the given page.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching transcription:", error);
+    throw error;
   }
 }

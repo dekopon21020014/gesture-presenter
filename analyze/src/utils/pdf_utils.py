@@ -38,7 +38,7 @@ def get_text(pdf_data: bytes) -> dict:
     doc = fitz.open(stream=pdf_data, filetype="pdf")
     text = {}
     try:
-        for i, page in enumerate(doc):
+        for i, page in enumerate(doc, start=1):
             text[i] = page.get_text()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF解析エラー: {str(e)}")

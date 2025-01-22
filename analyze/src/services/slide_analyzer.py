@@ -27,6 +27,21 @@ class SlideAnalyzer:
         full_text = " ".join([text for text, _ in text_blocks])
 
         prompt = load_prompt(
+            "analyze_precheck.txt",
+            text=full_text
+        )
+        try:
+            response = gemini_model.generate_content(prompt)
+            if not "false" in response.text:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"プロンプトインジェクションの可能性があるため、ブロックされました。",
+                )
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Geminiエラー: {str(e)}")
+
+        prompt = load_prompt(
             "analyze_slide.txt",
             font_analysis=font_analysis,
             full_text=full_text

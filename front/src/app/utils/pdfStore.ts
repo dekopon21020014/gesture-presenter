@@ -148,7 +148,7 @@ const getStoredFileInfoFromLocalStorage = (key: string): StoredFileInfo | null =
 
       // 必要なプロパティがすべて存在するかチェック
       if (parsedFileInfo.id && parsedFileInfo.fileName && parsedFileInfo.filePath && parsedFileInfo.fileUrl &&        
-        parsedFileInfo.fileSize && parsedFileInfo.advice && typeof parsedFileInfo.analyzed === "boolean" && parsedFileInfo.createdAt && 
+        parsedFileInfo.fileSize && typeof parsedFileInfo.analyzed === "boolean" && parsedFileInfo.createdAt && 
         typeof parsedFileInfo.createdAt.seconds === "number" && typeof parsedFileInfo.createdAt.nanoseconds === "number") {
         
         return parsedFileInfo;

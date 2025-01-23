@@ -6,6 +6,7 @@ import {
   Typography,
   Alert
 } from '@mui/material';
+import { PDFDocument } from 'pdf-lib';
 import { uploadFile } from '@/app/firebase/form/uploadFile'
 import { addFileInfo } from '@/app/firebase/form/fileInfo'
 import { type StoredFileInfo } from '@/app/types/file-info.type'
@@ -34,6 +35,20 @@ export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => 
 
     setError(null);
     return true;
+  };
+
+  const removeMetadata = async (pdfFile: File): Promise<Uint8Array> => {
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+    pdfDoc.setTitle('');
+    pdfDoc.setAuthor('');
+    pdfDoc.setSubject('');
+    pdfDoc.setKeywords([]);
+    pdfDoc.setCreator('');
+    pdfDoc.setProducer('');
+
+    return await pdfDoc.save();
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -89,11 +104,15 @@ export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => 
     setError(null);
 
     try {
-      const [filePath, downloadURL] = await uploadFile(selectedFile);
+      const cleanPdfBytes = await removeMetadata(selectedFile);
+      const cleanPdfBlob = new Blob([cleanPdfBytes], { type: 'application/pdf' });
+      const cleanPdfFile = new File([cleanPdfBlob], selectedFile.name, { type: 'application/pdf' });
+
+      const [filePath, downloadURL] = await uploadFile(cleanPdfFile);
       const fileData = {
-        fileName: selectedFile.name,
+        fileName: cleanPdfFile.name,
         filePath: filePath,
-        fileSize: selectedFile.size,
+        fileSize: cleanPdfFile.size,
         downloadURL: downloadURL,
       };
       const storedFileInfo = await addFileInfo(fileData);
@@ -105,7 +124,6 @@ export const PDFUploader: React.FC<PDFUploaderProps> = ({ onUploadSuccess }) => 
 
       onUploadSuccess(storedFileInfo);
 
-      // Reset the form
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

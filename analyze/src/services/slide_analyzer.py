@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from api.dependencies import gemini_model
 from utils.pdf_utils import extract_text_and_font_size, analyze_font_metrics
 from collections import defaultdict
+from typing import List
 import numpy as np
 
 from prompts.load import load_prompt
@@ -19,8 +20,8 @@ class SlideAnalyzer:
             "conclusion": "まとめや今後の展望"
         }
 
-    def analyze_slide(self, pdf_data: bytes) -> str:
-        text_blocks = extract_text_and_font_size(pdf_data)
+    def analyze_slide(self, pdf_data: bytes, remove_texts: List[str]) -> str:
+        text_blocks = extract_text_and_font_size(pdf_data, remove_texts)
         font_sizes = [size for _, size in text_blocks]
         font_analysis = analyze_font_metrics(font_sizes)
         
@@ -53,13 +54,13 @@ class SlideAnalyzer:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Geminiエラー: {str(e)}")
     
-    async def compare(self, own_slide: bytes, ref_slides):
+    async def compare(self, own_slide: bytes, ref_slides, remove_texts: List[str]):
         """参照スライドとの比較分析"""
-        current_analysis = self._get_structure(extract_text_and_font_size(own_slide))
+        current_analysis = self._get_structure(extract_text_and_font_size(own_slide, remove_texts))
 
         # 参照スライドの分析
         reference_analyses = [
-            self._get_structure(extract_text_and_font_size(await ref.read())) for ref in ref_slides
+            self._get_structure(extract_text_and_font_size(await ref.read(), remove_texts)) for ref in ref_slides
         ]
 
         # 平均値の計算

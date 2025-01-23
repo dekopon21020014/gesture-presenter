@@ -5,6 +5,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file');
     const refFiles = formData.getAll('ref');
+    const removeTexts = formData.getAll('remove_texts');
 
     if (!file || !(file instanceof Blob)) {
       return NextResponse.json({ error: 'Invalid main file' }, { status: 400 });
@@ -15,10 +16,14 @@ export async function POST(req: NextRequest) {
     apiFormData.append('file', file);
 
     // Add reference files
-    refFiles.forEach((refFile, index) => {
+    refFiles.forEach((refFile) => {
       if (refFile instanceof Blob) {
         apiFormData.append('ref', refFile);
       }
+    });
+
+    removeTexts.forEach((text) => {
+      apiFormData.append('remove_texts', text);
     });
 
     const response = await fetch('http://analyze:8001/analyze-slide', {
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const result = await response.json();
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error details:', error);
     return NextResponse.json(
       { error: `Error processing file: ${error.message}` },

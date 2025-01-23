@@ -46,7 +46,7 @@ export const getFileUrl = async (fileId: string): Promise<string | null> => {
   return fileInfo.fileUrl
 }
 
-export const updateAdvice = async (fileId: string, advice: string): Promise<string | null> => {
+export const updateAdvice = async (fileId: string, advice: string): Promise<void> => {
   const fileInfo = await getFileInfo(fileId);
   await addAdvice(fileId, advice);
   if (fileInfo) {
@@ -55,7 +55,6 @@ export const updateAdvice = async (fileId: string, advice: string): Promise<stri
     localStorage.setItem(fileId, JSON.stringify(fileInfo));
   }
 }
-
 
 export const deleteFromLocalStorage = async (): Promise<void> => {
   try {
@@ -70,7 +69,6 @@ export const deleteFromLocalStorage = async (): Promise<void> => {
   }
 };
   
-
 export const deleteFileInfo = async (fileId: string): Promise<void> => {
   try {
     const fileInfo = await getFileInfo(fileId);
@@ -103,12 +101,18 @@ export const deleteAllFilesInfo = async (): Promise<void> => {
 
 // URLからファイルを読み込み
 export const fetchPDF = async (fileId: string): Promise<File | null> => {
+  const storageUrl = `https://firebasestorage.googleapis.com/v0/b/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/`;
   const fileInfo = await getFileInfo(fileId);
-  if (!fileInfo?.fileUrl) return null;
+
+  // fileUrlがfirebase StorageのURLの場合のみfetchを実行
+  if (!fileInfo?.fileUrl || !fileInfo.fileUrl.startsWith(storageUrl)) {
+    console.error(`URL does not match the target URL. Skipping fetch for ${fileInfo?.fileUrl}`);
+    return null; 
+  }
 
   try {
     const response = await fetch(fileInfo.fileUrl);
-    if (!response.ok) throw new Error(`Failed to fetch file from URL: ${fileUrl}`);
+    if (!response.ok) throw new Error(`Failed to fetch file from URL: ${fileInfo.fileUrl}`);
 
     const blob = await response.blob();
     return new File([blob], fileInfo.fileName, { type: blob.type });
@@ -129,7 +133,7 @@ export const cleanupOldFiles = () => {
     if (fileInfo) {
       const createdAt = fileInfo.createdAt.seconds * 1000 + fileInfo.createdAt.nanoseconds / 1000000;
       if (now - createdAt > thirtyMinutes) {
-        localStorage.removeItem(key);
+        deleteFileInfo(key);
       }
     }
   }
@@ -144,7 +148,7 @@ const getStoredFileInfoFromLocalStorage = (key: string): StoredFileInfo | null =
 
       // 必要なプロパティがすべて存在するかチェック
       if (parsedFileInfo.id && parsedFileInfo.fileName && parsedFileInfo.filePath && parsedFileInfo.fileUrl &&        
-        typeof parsedFileInfo.analyzed === "boolean" && parsedFileInfo.createdAt && 
+        parsedFileInfo.fileSize && typeof parsedFileInfo.analyzed === "boolean" && parsedFileInfo.createdAt && 
         typeof parsedFileInfo.createdAt.seconds === "number" && typeof parsedFileInfo.createdAt.nanoseconds === "number") {
         
         return parsedFileInfo;

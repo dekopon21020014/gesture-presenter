@@ -30,14 +30,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DescriptionIcon from '@mui/icons-material/Description';
 
 import AnalysisResult from './AnalysisResult';
-import { fetchPDF } from '@/app/utils/pdfStore';
+import { saveFileInfoToLocalStorage, fetchPDF, getAllFilesInfo, updateAdvice, deleteFileInfo } from '@/app/utils/pdfStore';
 import FileUpFormFirebase from '@/app/components/Form/FileUpFormFirebase';
-import {
-  getAllFilesInfoFromFirebase,
-  getFileFromStorage,
-  addAdvice,
-  getTranscription, // コメントアウト
-} from '@/app/firebase/form/fileInfo';
+import { getTranscription } from '@/app/firebase/form/fileInfo';
 import { ConfirmationDialog } from '@/app/components/Form/ConfirmationDialog'
 import { StoredFileInfo } from '@/app/types/file-info.type'
 import { Timestamp } from 'firebase/firestore';
@@ -60,7 +55,6 @@ interface AnalysisData {
     [key: string]: ComparisonResult;
   };
   comparison_feedback?: string;
-  referenceFiles: File[];
 }
 
 interface ReferenceFile {
@@ -114,7 +108,7 @@ const AnalysisPage = () => {
   useEffect(() => {
     const fetchAndSetPdfFile = async () => {
       if (pdfId) {
-        const allFiles = await getAllFilesInfoFromFirebase();
+        const allFiles = await getAllFilesInfo();
         if (allFiles && allFiles.length > 0) {
           setAllFilesInfo(allFiles);
           const mainFile = allFiles.find((fileInfo) => fileInfo.id === pdfId);
@@ -132,12 +126,12 @@ const AnalysisPage = () => {
       setShowConfirmDialog(true);
       setActiveStep(1);
     } else if (mainFileInfo && mainFileInfo.analyzed) {
+      setShowConfirmDialog(false);
       try {
         const advice = JSON.parse(mainFileInfo.advice);
         const data: AnalysisData = {
           font_analysis: advice.font_analysis,
           gemini_response: advice.gemini_response,
-          referenceFiles: [],
         };
         if (advice.compare_result) {
           data.compare_result = advice.compare_result;
@@ -175,12 +169,13 @@ const AnalysisPage = () => {
   }, []);
 
   const handleFileUploadSuccess = (storedFileInfo: StoredFileInfo) => {
-    setAllFilesInfo((prev) => [...(prev ?? []), storedFileInfo]);
+    saveFileInfoToLocalStorage(storedFileInfo)
+    setAllFilesInfo((prev: StoredFileInfo[] | undefined) => [...(prev ?? []), storedFileInfo]);
   };
 
   const handleAddReference = async (fileId: string) => {
     if (fileId && referenceFiles.length < 5) {
-      const file = await getFileFromStorage(fileId);
+      const file = await fetchPDF(fileId);
       if (file) {
         setReferenceFiles((prev) => [...prev, { fileId, file }]);
       }
@@ -192,22 +187,34 @@ const AnalysisPage = () => {
   };
 
   const handleConfirm = (removeTexts: string[] | null) => {
+    setShowConfirmDialog(false);
     if (removeTexts) { 
-      setShowConfirmDialog(false);
-      performAnalysis(removeTexts, referenceFiles.length === 0); 
+      performAnalysis(removeTexts, referenceFiles.length !== 0); 
     }
   };
 
   const performAnalysis = async (removeTexts: string[], compare: boolean) => {
     setAnalyzing(true);
-    if (!mainFileInfo) return;
-    const file = await fetchPDF(mainFileInfo.id)
-    if (!file) return;
-    setMainFileInfo({ ...mainFileInfo, file });
+
+    // 分析ファイルがない場合 または 単体分析で既にレスポンスを得ている場合はreturn
+    if (!mainFileInfo || (mainFileInfo.advice && !compare)) return;
 
     const formData = new FormData();
-    formData.append('file', file, mainFileInfo.fileName);
+    if (!mainFileInfo.file) {
+      const file = await fetchPDF(mainFileInfo.id)
+      if (!file) {
+        setAnalyzing(false);
+        console.error("Failed to fetch file from URL:", mainFileInfo.fileUrl);
+        return
+      } else {
+        setMainFileInfo({ ...mainFileInfo, file });
+        formData.append('file', file, mainFileInfo.fileName);
+      }
+    } else {
+      formData.append('file', mainFileInfo.file, mainFileInfo.fileName);
+    }
 
+    // 比較用ファイルがある場合は他のファイルも送信する
     if (compare) {
       referenceFiles.forEach((ref) => {
         formData.append('ref', ref.file);
@@ -223,15 +230,27 @@ const AnalysisPage = () => {
         method: 'POST',
         body: formData,
       });
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Error: ${response.status} - ${errorText}`);
       }
+
       const data = await response.json();
-      if (!compare) {
-        await addAdvice(mainFileInfo.id, JSON.stringify(data));
+
+      if (!compare) {  // ファイル単独の分析時は分析結果を保存する
+        updateAdvice(mainFileInfo.id, JSON.stringify(data))
+        setAnalysisData(data);
+      } else {
+        const advice = JSON.parse(mainFileInfo.advice); 
+        const analysisData: AnalysisData = {
+          font_analysis: advice.font_analysis,
+          gemini_response: advice.gemini_response,
+          compare_result: data.compare_result
+        };
+        
+        setAnalysisData(analysisData);
       }
-      setAnalysisData(data);
       setActiveStep(2);
     } catch (err: any) {
       setError(err.message);
@@ -239,10 +258,9 @@ const AnalysisPage = () => {
       setAnalyzing(false);
     }
   };
-
   const performGetText = async () => {
     if (!mainFileInfo) return;
-    const file = await getFileFromStorage(mainFileInfo.id);
+    const file = await fetchPDF(mainFileInfo.id);
     if (!file) return;
 
     setTextLoading(true);
@@ -393,43 +411,23 @@ const AnalysisPage = () => {
                     <FileUpFormFirebase onUploadSuccess={handleFileUploadSuccess} />
 
                     <List>
-                      {allFilesInfo
-                        ?.filter((fileInfo) =>
-                          fileInfo.id !== mainFileInfo.id &&
-                          !referenceFiles.some((refFile) => refFile.fileId === fileInfo.id)
-                        )
-                        .map((fileInfo) => (
-                          <ListItem key={fileInfo.id}>
-                            <ListItemText
-                              primary={fileInfo.fileName}
-                              secondary={`サイズ: ${(fileInfo.fileSize / 1024 / 1024).toFixed(2)} MB`}
-                            />
-                            <Button
-                              onClick={() => handleAddReference(fileInfo.id)}
-                              variant="outlined"
-                              size="small"
-                            >
-                              比較ファイルに追加
-                            </Button>
-                          </ListItem>
-                        ))}
-                    </List>
-                  </Box>
-                </>
-              )}
-
-              {referenceFiles.length > 0 ? (
-                <>
-                  <List sx={{ bgcolor: 'background.paper', borderRadius: 1 }}>
-                    {referenceFiles.map((ref, index) => (
-                      <React.Fragment key={ref.fileId}>
-                        {index > 0 && <Divider />}
-                        <ListItem
+                    {allFilesInfo
+                      ?.filter((fileInfo) =>
+                        fileInfo.id !== mainFileInfo.id &&
+                        !referenceFiles.some((refFile) => refFile.fileId === fileInfo.id)
+                      )
+                      .map((fileInfo) => (
+                        <ListItem 
+                          key={fileInfo.id} 
                           secondaryAction={
-                            <IconButton
-                              edge="end"
-                              aria-label="delete"
-                              onClick={() => handleRemoveReference(ref.fileId)}
+                            <IconButton 
+                              edge="end" 
+                              aria-label="delete" 
+                              onClick={() => {
+                                deleteFileInfo(fileInfo.id)
+                                const updatedFiles = allFilesInfo.filter(file => file.id !== fileInfo.id);
+                                setAllFilesInfo(updatedFiles);
+                              }}
                               color="error"
                             >
                               <DeleteIcon />
@@ -437,12 +435,45 @@ const AnalysisPage = () => {
                           }
                         >
                           <ListItemText
-                            primary={ref.file.name}
-                            secondary={`サイズ: ${(ref.file.size / 1024 / 1024).toFixed(2)} MB`}
+                            primary={fileInfo.fileName}
+                            secondary={`サイズ: ${(fileInfo.fileSize / 1024 / 1024).toFixed(2)} MB`}
                           />
+                          <Button
+                            onClick={() => handleAddReference(fileInfo.id)}
+                            variant="outlined"
+                            size="small"
+                          >
+                            比較ファイルに追加
+                          </Button>
                         </ListItem>
-                      </React.Fragment>
-                    ))}
+                      ))}
+                    </List>
+                  </Box>
+                </>
+              )}
+
+              {referenceFiles.length > 0 ? (
+                <>
+                  <List sx={{ mt: -4, bgcolor: 'background.paper', borderRadius: 1 }}>
+                  {referenceFiles.map((ref, index) => (
+                    <React.Fragment key={ref.fileId}>
+                      <ListItem>
+                        <ListItemText
+                          primary={ref.file.name}
+                          secondary={`サイズ: ${(ref.file.size / 1024 / 1024).toFixed(2)} MB`}
+                        />
+                        <Button
+                          onClick={() => handleRemoveReference(ref.fileId)}
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          sx={{ marginRight: 3.6 }}
+                        >
+                          比較ファイルから削除
+                        </Button>
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
                   </List>
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="body2" color="text.secondary">
